@@ -1,0 +1,57 @@
+package com.ardetrick.oryhydrareference.login;
+
+import com.ardetrick.oryhydrareference.modelandview.ModelAndViewUtils;
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+
+@Slf4j
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/login")
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class LoginController {
+
+    @NonNull LoginService loginService;
+
+    /**
+     * This is the endpoint which Ory Hydra redirects to after a resource owner initiates the OAuth flow. It is
+     * responsible for verifying the login challenge. Based on the current authentication state returned from Hydra
+     * the OAuth flow may be continued (the "optimistic" login case) or they will be redirected to a UI, so they can
+     * explicitly authenticate themselves.
+     */
+    @GetMapping
+    public ModelAndView loginOptimistically(@RequestParam("login_challenge") String loginChallenge) {
+        val initialLoginResult = loginService.processInitialLoginRequest(loginChallenge);
+
+        return initialLoginResult.toModelAndView();
+    }
+
+    /**
+     * An implementation of the Ory Hydra Login Endpoint. This endpoint is responsible for fulfilling the
+     * responsibilities of the login endpoint as outlined by the Ory Hydra documentation.
+     * </p>
+     * One of the requirements of this endpoint is to authenticate the user. As per the OAuth specification
+     * the identity of the resource owner must be verified, but the way in which that authentication is done is not
+     * specified.
+     * </p>
+     * For the purposes of this demo a credentials are used but other approaches such as session cookies could be used.
+     *
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc6749#section-3.1">RFC 6749 Section 3.1</a>
+     * @see <a href="https://www.ory.sh/docs/hydra/guides/login">Implementing The Login Endpoint</a>
+     */
+    @PostMapping("usernamePassword")
+    public ModelAndView loginWithUsernamePasswordForm(
+            LoginForm loginForm
+    ) {
+        val redirectUrl = loginService.processSubmittedLoginRequest(loginForm.getLoginChallenge(), loginForm);
+        return ModelAndViewUtils.redirect(redirectUrl);
+    }
+    // TODO: add unit tests for form submission
+
+}
