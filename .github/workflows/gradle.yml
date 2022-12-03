@@ -18,9 +18,7 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     - name: Set up JDK 17
@@ -28,6 +26,8 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+    - name: Install Playwright Dependencies
+      run: ./gradlew playwright --args="install-deps"
     - name: Build with Gradle
       uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
       with:
