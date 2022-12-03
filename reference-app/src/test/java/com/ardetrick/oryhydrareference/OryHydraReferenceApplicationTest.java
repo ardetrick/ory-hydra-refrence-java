@@ -7,8 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 class OryHydraReferenceApplicationTest {
 
     @Test
-    public void contextStarts() {
-
-    }
+    public void contextStarts() {}
 
 }

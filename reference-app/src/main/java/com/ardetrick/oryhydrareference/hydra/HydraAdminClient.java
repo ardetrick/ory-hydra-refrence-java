@@ -97,8 +97,11 @@ public class HydraAdminClient {
         }
     }
 
-    public OAuth2RedirectTo acceptConsentRequest(@NonNull String consentChallenge) {
+    public OAuth2RedirectTo acceptConsentRequest(@NonNull String consentChallenge, OAuth2ConsentRequest consentRequest) {
         val acceptConsentRequest = new AcceptOAuth2ConsentRequest();
+        acceptConsentRequest.setGrantScope(consentRequest.getRequestedScope());
+        acceptConsentRequest.setGrantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience());
+        // TODO: session, remember, rememberFor
         try {
             return oAuth2Api.acceptOAuth2ConsentRequest(consentChallenge, acceptConsentRequest);
         } catch (ApiException e) {

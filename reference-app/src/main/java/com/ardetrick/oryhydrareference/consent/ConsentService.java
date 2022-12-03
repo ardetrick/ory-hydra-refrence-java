@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
 import org.springframework.stereotype.Service;
+import sh.ory.hydra.model.OAuth2RedirectTo;
 
 @Service
 @RequiredArgsConstructor
@@ -20,10 +21,17 @@ public class ConsentService {
 
         val skip = consentRequest.getSkip();
         if(Boolean.TRUE.equals(skip)) {
-            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(consentChallenge);
+            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(consentChallenge, consentRequest);
             return new InitialConsentResponseAcceptedRedirect(acceptConsentResponse.getRedirectTo());
         }
         return new InitialConsentResponseUIRedirect();
+    }
+
+    public OAuth2RedirectTo processConsentForm(ConsentForm consentForm) {
+        val consentRequest = hydraAdminClient.getConsentRequest(consentForm.getConsentChallenge());
+        System.out.println(consentRequest);
+
+        return hydraAdminClient.acceptConsentRequest(consentForm.getConsentChallenge(), consentRequest);
     }
 
 }

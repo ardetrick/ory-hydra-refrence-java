@@ -7,11 +7,10 @@
 <form action="/consent" method="post">
   <!-- TODO: implement csrf protection -->
   <!--<input type="hidden" name="csrf_token" value="...." />-->
-  <input type="hidden" name="consent_challenge" value="${consentChallenge}" />
+  <input type="hidden" name="consentChallenge" value="${consentChallenge}" />
 
   <!-- for each scope being requested... -->
   <input type="checkbox" id=scope value=scope name=scope />
-
   <input type="checkbox" id="remember" value=1 name="remember" />
 
   <!-- TODO: add terms of service link -->

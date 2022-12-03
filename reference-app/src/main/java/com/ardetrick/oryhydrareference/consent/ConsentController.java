@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
@@ -41,6 +42,13 @@ public class ConsentController {
         }
 
         throw new IllegalStateException("Unknown response type: " + response.getClass());
+    }
+
+    @PostMapping
+    public ModelAndView submitConsentForm(ConsentForm consentForm) {
+        val x = consentService.processConsentForm(consentForm);
+
+        return ModelAndViewUtils.redirect(x.getRedirectTo());
     }
 
 }

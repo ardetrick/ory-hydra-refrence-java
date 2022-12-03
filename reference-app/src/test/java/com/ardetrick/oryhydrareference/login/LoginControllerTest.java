@@ -56,7 +56,7 @@ class LoginControllerTest {
                         <form action="/login/usernamePassword" method="post">
                         """)))
                 .andExpect(content().string(containsString("""
-                        <input type="hidden" name="login_challenge" value="example-login-challenge" />
+                        <input type="hidden" name="loginChallenge" value="example-login-challenge" />
                         """)));
     }
 
