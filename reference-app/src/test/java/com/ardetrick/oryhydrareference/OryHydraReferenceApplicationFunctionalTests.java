@@ -1,12 +1,12 @@
 package com.ardetrick.oryhydrareference;
 
+import com.ardetrick.oryhydrareference.test.utils.ScreenshotPathProducer;
 import com.ardetrick.oryhydrareference.testcontainers.OryHydraDockerComposeContainer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URIBuilder;
-import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -43,7 +43,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -163,13 +162,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 	// http://localhost:62107/oauth2/auth?response_type=code&client_id=4f7a6bbf-c0ca-4f20-acf2-42473ae95410&redirect_uri=http%3A%2F%2Flocalhost%2Fredirect&scope=offline_access+openid+offline+profile&state=12345678901234567890
 	@Test
 	void initialLoginRequestShouldRedirectToLoginUserInterface() throws URISyntaxException, IOException, InterruptedException {
-		var uri = new URIBuilder(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth"))
-				.addParameter("response_type", "code")
-				.addParameter("client_id", oAuth2Client.getClientId())
-				.addParameter("redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
-				.addParameter("scope", "offline_access openid offline profile")
-				.addParameter("state", "12345678901234567890")
-				.build();
+		URI uri = getUriToInitiateFlow();
 
 		var request = HttpRequest.newBuilder()
 				.uri(uri)
@@ -195,44 +188,80 @@ public class OryHydraReferenceApplicationFunctionalTests {
 	}
 
 	@Test
+	public void loginInvalidCredentials() {
+		val screenshotPathProducer = ScreenshotPathProducer.builder()
+				.testName("loginInvalidCredentials")
+				.build();
+
+		try (val playwright = Playwright.create();
+			 val browser = playwright.webkit().launch();
+		) {
+			val page = browser.newPage();
+			val initiateFlowUri = getUriToInitiateFlow();
+
+			page.navigate(initiateFlowUri.toString());
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+
+			page.type("input[name=loginEmail]", "foo@bar.com");
+			page.type("input[name=loginPassword]", "password1");
+
+			page.locator("input[name=submit]").click();
+
+			page.waitForLoadState();
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit.png"));
+
+			assertThat(page.content()).contains("invalid credentials try again");
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private URI getUriToInitiateFlow() throws URISyntaxException {
+		return new URIBuilder(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth"))
+				.addParameter("response_type", "code")
+				.addParameter("client_id", oAuth2Client.getClientId())
+				.addParameter("redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
+				.addParameter("scope", "offline_access openid offline profile")
+				.addParameter("state", "12345678901234567890")
+				.build();
+	}
+
+	@Test
 	public void completeFullOAuthFlowUsingUIToLogin() {
+		val screenshotPathProducer = ScreenshotPathProducer.builder()
+				.testName("completeFullOAuthFlowUsingUIToLogin")
+				.build();
+
 		try (val playwright = Playwright.create();
 			 val browser = playwright.webkit().launch();
 		) {
 			val page = browser.newPage();
 
-			var uri = new URIBuilder(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth"))
-					.addParameter("response_type", "code")
-					.addParameter("client_id", oAuth2Client.getClientId())
-					.addParameter("redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
-					.addParameter("scope", "offline_access openid offline profile")
-					.addParameter("state", "12345678901234567890")
-					.build();
+			val uri = getUriToInitiateFlow();
 
 			page.navigate(uri.toString());
-			page.screenshot(new Page.ScreenshotOptions().setPath(Paths.get("build/test-results/example.png")));
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-			page.type("input[name=loginEmail]", "example@example.com");
-			page.type("input[name=loginPassword]", "example-password");
+			page.type("input[name=loginEmail]", "foo@bar.com");
+			page.type("input[name=loginPassword]", "password");
 
 			page.locator("input[name=submit]").click();
 
 			page.waitForLoadState();
 
-			page.screenshot(new Page.ScreenshotOptions().setPath(Paths.get("build/test-results/after-login-submit.png")));
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit.png"));
 
 			page.locator("input[id=accept]").click();
 
 			page.waitForLoadState();
 
-			page.screenshot(new Page.ScreenshotOptions().setPath(Paths.get("build/test-results/after-consent-submit.png")));
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit.png"));
 
 			verify(queryStringConsumer)
 					.accept(queryStringConsumerArgumentCaptor.capture());
 
 			val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
 
-			assertThat(queryStringValue).isNotNull();
 			assertThat(queryStringValue).isNotBlank();
 
 			val maybeCode = Arrays.stream(queryStringValue.split("&"))
@@ -244,7 +273,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 					.isNotNull()
 					.isPresent();
 
-			String params = Map.of(
+			val params = Map.of(
 							"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
 							"code", maybeCode.get(),
 							"grant_type", Objects.requireNonNull(oAuth2Client.getGrantTypes().get(0)),
@@ -257,19 +286,19 @@ public class OryHydraReferenceApplicationFunctionalTests {
 							URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
 					).collect(Collectors.joining("&"));
 
-			HttpRequest request = HttpRequest.newBuilder()
+			val request = HttpRequest.newBuilder()
 					.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
 					.header("Content-Type", "application/x-www-form-urlencoded")
 					.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
 					.POST(HttpRequest.BodyPublishers.ofString(params))
 					.build();
 
-			var codeExchangeResponse = HttpClient.newBuilder().build()
+			val codeExchangeResponse = HttpClient.newBuilder().build()
 					.send(request, HttpResponse.BodyHandlers.ofString());
 
 			assertThat(codeExchangeResponse.statusCode()).isEqualTo(200);
 
-			var mapped = new ObjectMapper().readValue(codeExchangeResponse.body(), CodeExchangeResponse.class);
+			val mapped = new ObjectMapper().readValue(codeExchangeResponse.body(), CodeExchangeResponse.class);
 
 			assertThat(mapped.accessToken())
 					.isNotBlank();

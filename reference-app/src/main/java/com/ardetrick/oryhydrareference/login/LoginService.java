@@ -23,14 +23,14 @@ public class LoginService {
                 .orElseThrow(LoginRequestNotFoundException::new);
 
         if (loginRequest.getSkip()) {
-            hydraAdminClient.acceptLoginRequest(loginChallenge);
+            hydraAdminClient.acceptLoginRequest(loginChallenge, loginRequest.getSubject());
             return InitialLoginResult.loginAcceptedFollowRedirect(loginRequest.getRequestUrl());
         }
 
         return InitialLoginResult.displayLoginUserInterface(loginChallenge);
     }
 
-    public String processSubmittedLoginRequest(@NonNull String loginChallenge, LoginForm loginForm) {
+    public LoginResult processSubmittedLoginRequest(@NonNull String loginChallenge, LoginForm loginForm) {
         hydraAdminClient.getLoginRequest(loginChallenge)
                 .orElseThrow(LoginRequestNotFoundException::new);
 
@@ -38,16 +38,17 @@ public class LoginService {
         // look at request body to see if they accepted the request
         // - if they denied, call the admin endpoint to reject the request
 
-        // validate the request
+        // Naive authentication logic. In reality this should delegate to a real authentication system.
+        if (loginForm.getLoginEmail() == null || loginForm.getLoginPassword() == null) {
+            return LoginResult.invalidCredentials();
+        }
+        if (!"foo@bar.com".equals(loginForm.getLoginEmail()) || !"password".equals(loginForm.getLoginPassword())) {
+            return LoginResult.invalidCredentials();
+        }
 
-        // validate the request
-        // - this could be done by doing password credentials
-        // - or looking at cookies
-        // - or many other methods
+        val completedRequest = hydraAdminClient.acceptLoginRequest(loginChallenge, loginForm.getLoginEmail());
 
-        val completedRequest = hydraAdminClient.acceptLoginRequest(loginChallenge);
-
-        return completedRequest.getRedirectTo();
+        return LoginResult.loginAcceptedFollowRedirect(completedRequest.getRedirectTo());
     }
 
 }

@@ -1,3 +1,18 @@
+# Ory Hydra Reference Implementation - Java
+
+## Task List
+
+- [ ] Add documentation explain application with screen shots
+- [ ] Add a fancier UI
+- [ ] Clean up integration tests
+- [ ] Add custom OIDC claims
+- [ ] Add more unit tests
+- [ ] Document GitHub actions
+- [ ] Document OIDC usage
+- [ ] Document playwright usage
+
+## Notes
+
 docker run -d \
 --name ory-hydra-example-sqlite \
 --volume source=hydra-sqlite,target=/var/lib/sqlite,read_only=false \

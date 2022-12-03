@@ -14,7 +14,7 @@ public class OryHydraReferenceApplication {
 
 	@ConfigurationProperties("reference-app")
 	@Configuration
-	class Config {
+	static class Config {
 
 		String oryHydraPublicUri;
 

@@ -55,9 +55,13 @@ public class HydraAdminClient {
         }
     }
 
-    public OAuth2RedirectTo acceptLoginRequest(@NonNull String loginChallenge) {
+    public OAuth2RedirectTo acceptLoginRequest(
+            @NonNull String loginChallenge,
+            @NonNull String loginEmail
+    ) {
         val acceptLoginRequest = new AcceptOAuth2LoginRequest();
-        acceptLoginRequest.subject("dummy subject");
+        // Subject is an alias for user ID. A subject can be a random string, a UUID, an email address, ...
+        acceptLoginRequest.subject(loginEmail);
         try {
             return oAuth2Api.acceptOAuth2LoginRequest(loginChallenge, acceptLoginRequest);
         } catch (ApiException e) {

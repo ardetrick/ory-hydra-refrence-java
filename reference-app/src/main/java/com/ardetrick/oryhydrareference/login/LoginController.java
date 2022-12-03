@@ -54,7 +54,16 @@ public class LoginController {
             LoginForm loginForm
     ) {
         val redirectUrl = loginService.processSubmittedLoginRequest(loginForm.getLoginChallenge(), loginForm);
-        return ModelAndViewUtils.redirect(redirectUrl);
+        if (redirectUrl.redirectUrl() != null) {
+            return ModelAndViewUtils.redirect(redirectUrl.redirectUrl());
+        }
+
+        val loginModelAndView = new ModelAndView();
+        loginModelAndView.setViewName("/login");
+        loginModelAndView.addObject("loginChallenge", loginForm.getLoginChallenge());
+        loginModelAndView.addObject("error", "invalid credentials try again");
+
+        return loginModelAndView;
     }
     // TODO: add unit tests for form submission
 
