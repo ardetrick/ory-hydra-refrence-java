@@ -21,17 +21,20 @@ public class ConsentService {
 
         val skip = consentRequest.getSkip();
         if(Boolean.TRUE.equals(skip)) {
-            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(consentChallenge, consentRequest);
+            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(consentChallenge, true, consentRequest);
             return new InitialConsentResponseAcceptedRedirect(acceptConsentResponse.getRedirectTo());
         }
         return new InitialConsentResponseUIRedirect();
     }
 
     public OAuth2RedirectTo processConsentForm(ConsentForm consentForm) {
-        val consentRequest = hydraAdminClient.getConsentRequest(consentForm.getConsentChallenge());
-        System.out.println(consentRequest);
+        val consentRequest = hydraAdminClient.getConsentRequest(consentForm.consentChallenge());
 
-        return hydraAdminClient.acceptConsentRequest(consentForm.getConsentChallenge(), consentRequest);
+        return hydraAdminClient.acceptConsentRequest(
+                consentForm.consentChallenge(),
+                consentForm.isRemember(),
+                consentRequest
+        );
     }
 
 }

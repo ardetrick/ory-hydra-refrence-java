@@ -159,7 +159,6 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		return URI.create(dockerComposeEnvironment.publicBaseUriString() + "/.well-known/jwks.json");
 	}
 
-	// http://localhost:62107/oauth2/auth?response_type=code&client_id=4f7a6bbf-c0ca-4f20-acf2-42473ae95410&redirect_uri=http%3A%2F%2Flocalhost%2Fredirect&scope=offline_access+openid+offline+profile&state=12345678901234567890
 	@Test
 	void initialLoginRequestShouldRedirectToLoginUserInterface() throws URISyntaxException, IOException, InterruptedException {
 		URI uri = getUriToInitiateFlow();
@@ -208,7 +207,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 			page.locator("input[name=submit]").click();
 
 			page.waitForLoadState();
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit.png"));
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
 			assertThat(page.content()).contains("invalid credentials try again");
 		} catch (URISyntaxException e) {
@@ -249,13 +248,13 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
 			page.waitForLoadState();
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit.png"));
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
 			page.locator("input[id=accept]").click();
 
 			page.waitForLoadState();
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit.png"));
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
 
 			verify(queryStringConsumer)
 					.accept(queryStringConsumerArgumentCaptor.capture());
@@ -306,6 +305,171 @@ public class OryHydraReferenceApplicationFunctionalTests {
 					.isNotBlank();
 			assertThat(mapped.idToken())
 					.isNotBlank();
+		} catch (URISyntaxException | InterruptedException | IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Test
+	public void skipConsentScreenOnSecondLoginWhenRememberMeIsUsed() {
+		val screenshotPathProducer = ScreenshotPathProducer.builder()
+				.testName("skipConsentScreenOnSecondLoginWhenRememberMeIsUsed")
+				.build();
+
+		try (val playwright = Playwright.create();
+			 val browser = playwright.webkit().launch();
+		) {
+			val page = browser.newPage();
+
+			val uri = getUriToInitiateFlow();
+
+			page.navigate(uri.toString());
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+
+			page.type("input[name=loginEmail]", "foo@bar.com");
+			page.type("input[name=loginPassword]", "password");
+
+			page.locator("input[name=submit]").click();
+
+			page.waitForLoadState();
+
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+
+			page.locator("input[id=accept]").click();
+
+			page.waitForLoadState();
+
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+
+			verify(queryStringConsumer)
+					.accept(queryStringConsumerArgumentCaptor.capture());
+			val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
+			val maybeCode = Arrays.stream(queryStringValue.split("&"))
+					.filter(x -> x.startsWith("code="))
+					.findFirst()
+					.map(x -> x.replace("code=", ""));
+			val params = Map.of(
+							"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
+							"code", maybeCode.get(),
+							"grant_type", Objects.requireNonNull(oAuth2Client.getGrantTypes().get(0)),
+							"redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0)
+					)
+					.entrySet()
+					.stream()
+					.map(entry -> String.join("=",
+							URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
+							URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
+					).collect(Collectors.joining("&"));
+			val request = HttpRequest.newBuilder()
+					.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
+					.header("Content-Type", "application/x-www-form-urlencoded")
+					.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
+					.POST(HttpRequest.BodyPublishers.ofString(params))
+					.build();
+
+			val codeExchangeResponse = HttpClient.newBuilder().build()
+					.send(request, HttpResponse.BodyHandlers.ofString());
+
+			assertThat(codeExchangeResponse.statusCode()).isEqualTo(200);
+
+			page.navigate(getUriToInitiateFlow().toString());
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
+
+			page.type("input[name=loginEmail]", "foo@bar.com");
+			page.type("input[name=loginPassword]", "password");
+
+			page.locator("input[name=submit]").click();
+
+			page.waitForLoadState();
+
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit-second-time"));
+
+			// Consent screen is skipped
+			assertThat(page.url()).contains("/client/callback?code=");
+		} catch (URISyntaxException | InterruptedException | IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Test
+	public void doNotSkipConsentScreenOnSecondLoginWhenRememberMeIsFalse() {
+		val screenshotPathProducer = ScreenshotPathProducer.builder()
+				.testName("doNotSkipConsentScreenOnSecondLoginWhenRememberMeIsFalse")
+				.build();
+
+		try (val playwright = Playwright.create();
+			 val browser = playwright.webkit().launch();
+		) {
+			val page = browser.newPage();
+
+			val uri = getUriToInitiateFlow();
+
+			page.navigate(uri.toString());
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+
+			page.type("input[name=loginEmail]", "foo@bar.com");
+			page.type("input[name=loginPassword]", "password");
+
+			page.locator("input[name=submit]").click();
+
+			page.waitForLoadState();
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+
+			page.locator("input[id=remember]").uncheck();
+
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-uncheck"));
+
+			page.locator("input[id=accept]").click();
+
+			page.waitForLoadState();
+
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+
+			verify(queryStringConsumer)
+					.accept(queryStringConsumerArgumentCaptor.capture());
+			val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
+			val maybeCode = Arrays.stream(queryStringValue.split("&"))
+					.filter(x -> x.startsWith("code="))
+					.findFirst()
+					.map(x -> x.replace("code=", ""));
+			val params = Map.of(
+							"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
+							"code", maybeCode.get(),
+							"grant_type", Objects.requireNonNull(oAuth2Client.getGrantTypes().get(0)),
+							"redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0)
+					)
+					.entrySet()
+					.stream()
+					.map(entry -> String.join("=",
+							URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
+							URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
+					).collect(Collectors.joining("&"));
+			val request = HttpRequest.newBuilder()
+					.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
+					.header("Content-Type", "application/x-www-form-urlencoded")
+					.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
+					.POST(HttpRequest.BodyPublishers.ofString(params))
+					.build();
+
+			val codeExchangeResponse = HttpClient.newBuilder().build()
+					.send(request, HttpResponse.BodyHandlers.ofString());
+
+			assertThat(codeExchangeResponse.statusCode()).isEqualTo(200);
+
+			page.navigate(getUriToInitiateFlow().toString());
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
+
+			page.type("input[name=loginEmail]", "foo@bar.com");
+			page.type("input[name=loginPassword]", "password");
+
+			page.locator("input[name=submit]").click();
+
+			page.waitForLoadState();
+
+			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit-second-time"));
+
+			// Consent screen is not skipped
+			assertThat(page.url()).contains("/consent");
 		} catch (URISyntaxException | InterruptedException | IOException e) {
 			throw new RuntimeException(e);
 		}

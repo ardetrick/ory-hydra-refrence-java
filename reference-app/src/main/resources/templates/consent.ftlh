@@ -10,8 +10,15 @@
   <input type="hidden" name="consentChallenge" value="${consentChallenge}" />
 
   <!-- for each scope being requested... -->
-  <input type="checkbox" id=scope value=scope name=scope />
-  <input type="checkbox" id="remember" value=1 name="remember" />
+  <label for="scopes">Scopes</label><br>
+
+  <input type="checkbox" id=scope name=scope checked/>
+  <label for="vehicle1">Example scope selection (make this dynamic)</label><br>
+
+  <br>
+
+  <input type="checkbox" id="remember" name="remember" checked />
+  <label for="remember">Remember me</label><br>
 
   <!-- TODO: add terms of service link -->
   <!-- TODO: add policy link -->

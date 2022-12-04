@@ -20,6 +20,8 @@ import java.util.Optional;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class HydraAdminClient {
 
+    private static final Long DEFAULT_SESSION_EXPIRATION_IN_SECONDS = 3600L;
+
     @NonNull OAuth2Api oAuth2Api;
 
     HydraAdminClient() {
@@ -29,29 +31,18 @@ public class HydraAdminClient {
     }
 
     /**
-     * https://github.com/ory/hydra-client-java/blob/master/docs/OAuth2Api.md#getoauth2loginrequest
+     * <a href="https://github.com/ory/hydra-client-java/blob/master/docs/OAuth2Api.md#getoauth2loginrequest">...</a>
      */
     public Optional<OAuth2LoginRequest> getLoginRequest(@NonNull String loginChallenge) {
         try {
             return Optional.of(oAuth2Api.getOAuth2LoginRequest(loginChallenge));
         } catch (ApiException e) {
-            if (400 == e.getCode()) {
-                return Optional.empty();
-                // jsonError
-            }
-            if (404 == e.getCode()) {
-                return Optional.empty();
-                // jsonError
-            }
-            if (410 == e.getCode()) {
-                return Optional.empty();
-                // requestWasHandledResponse
-            }
-            if (500 == e.getCode()) {
-                return Optional.empty();
-                // jsonError
-            }
-            throw new RuntimeException(e);
+            return switch (e.getCode()) {
+                case 410 -> Optional.empty(); // requestWasHandledResponse
+                case 400, 404 -> Optional.empty(); // jsonError
+                case 500 -> Optional.empty(); // jsonError
+                default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
+            };
         }
     }
 
@@ -65,19 +56,10 @@ public class HydraAdminClient {
         try {
             return oAuth2Api.acceptOAuth2LoginRequest(loginChallenge, acceptLoginRequest);
         } catch (ApiException e) {
-            if (400 == e.getCode()) {
-                // jsonError
+            switch (e.getCode()) {
+                case 400, 401, 404, 500 -> throw new RuntimeException("code: " + e.getCode(), e); // jsonError
+                default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
             }
-            if (401 == e.getCode()) {
-                // jsonError
-            }
-            if (404 == e.getCode()) {
-                // jsonError
-            }
-            if (500 == e.getCode()) {
-                // jsonError
-            }
-            throw new RuntimeException(e);
         }
     }
 
@@ -85,37 +67,32 @@ public class HydraAdminClient {
         try {
             return oAuth2Api.getOAuth2ConsentRequest(consentChallenge);
         } catch (ApiException e) {
-            if (400 == e.getCode()) {
-                // jsonError
+            switch (e.getCode()) {
+                case 400, 404 -> throw new RuntimeException("code: " + e.getCode(), e); // jsonError
+                default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
             }
-            if (404 == e.getCode()) {
-                // jsonError
-            }
-            if (410 == e.getCode()) {
-                // requestWasHandledResponse
-            }
-            if (500 == e.getCode()) {
-                // jsonError
-            }
-            throw new RuntimeException(e);
         }
     }
 
-    public OAuth2RedirectTo acceptConsentRequest(@NonNull String consentChallenge, OAuth2ConsentRequest consentRequest) {
+    public OAuth2RedirectTo acceptConsentRequest(
+            @NonNull String consentChallenge,
+            boolean remember,
+            @NonNull OAuth2ConsentRequest consentRequest
+    ) {
         val acceptConsentRequest = new AcceptOAuth2ConsentRequest();
         acceptConsentRequest.setGrantScope(consentRequest.getRequestedScope());
         acceptConsentRequest.setGrantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience());
+        acceptConsentRequest.remember(remember);
+        acceptConsentRequest.rememberFor(DEFAULT_SESSION_EXPIRATION_IN_SECONDS);
+
         // TODO: session, remember, rememberFor
         try {
             return oAuth2Api.acceptOAuth2ConsentRequest(consentChallenge, acceptConsentRequest);
         } catch (ApiException e) {
-            if (404 == e.getCode()) {
-                // jsonError
+            switch (e.getCode()) {
+                case 404, 500 -> throw new RuntimeException("code: " + e.getCode(), e); // jsonError
+                default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
             }
-            if (500 == e.getCode()) {
-                // jsonError
-            }
-            throw new RuntimeException(e);
         }
     }
 

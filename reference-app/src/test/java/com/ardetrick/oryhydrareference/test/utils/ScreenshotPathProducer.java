@@ -24,7 +24,7 @@ public class ScreenshotPathProducer {
     }
 
     private String getPathAndIncrementIndex(String stepName) {
-        val path = PREFIX + testName + "/" + currentIndexPrefix + "-" + stepName  + ".png";
+        val path = PREFIX + testName + "/" + currentIndexPrefix + "-" + stepName + ".png";
         currentIndexPrefix++;
         return path;
     }
