@@ -2,15 +2,14 @@
 
 ## Task List
 
-- [ ] Add documentation explain application with screen shots
+- [ ] Add documentation explain application with screenshots
 - [ ] Add a fancier UI
 - [ ] Clean up integration tests
-- [ ] Add custom OIDC claims
 - [ ] Add more unit tests
 - [ ] Document GitHub actions
+- [ ] Add check boxes for individual scopes
 - [ ] Document OIDC usage
 - [ ] Document playwright usage
-- [ ] Add CSRF
 - [ ] Show login errors on login screen
 - [ ] Add playwright traces https://playwright.dev/java/docs/trace-viewer-intro
 

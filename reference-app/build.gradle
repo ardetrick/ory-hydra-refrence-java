@@ -25,11 +25,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.session:spring-session-core'
 	implementation 'org.springframework.boot:spring-boot-starter-jersey'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
 
 	testImplementation project(':testcontainers-ory-hydra')
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.testcontainers:junit-jupiter'
-	testImplementation 'com.microsoft.playwright:playwright:1.27.1'
+	testImplementation 'com.microsoft.playwright:playwright:1.28.1'
 	testImplementation 'com.auth0:java-jwt:4.2.1'
 }
 
