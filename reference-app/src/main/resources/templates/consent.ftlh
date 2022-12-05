@@ -9,11 +9,15 @@
   <input type="hidden" name="consentChallenge" value="${consentChallenge}" />
 
   <!-- for each scope being requested... -->
-  <label for="scopes">Scopes</label><br>
-  <input type="checkbox" id=scope name=scope checked/><br>
+  Requested Scopes<br>
 
-  <label for="remember">Remember me:</label><br>
-  <input type="checkbox" id="remember" name="remember" checked />
+  <#list scopes as scope>
+    <input type="checkbox" name="scopes" id="scopes-${scope}" value="${scope}" checked>
+    <label for="${scope}">${scope}</label><br>
+  </#list>
+
+  <label for="remember">Remember me:</label>
+  <input type="checkbox" id="remember" name="remember" checked /><br>
 
   <input type="submit" id="accept" name="submit" value="Allow access" />
   <input type="submit" id="reject" name="submit" value="Deny access" />

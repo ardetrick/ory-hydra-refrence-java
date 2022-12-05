@@ -12,6 +12,7 @@ import sh.ory.hydra.Configuration;
 import sh.ory.hydra.api.OAuth2Api;
 import sh.ory.hydra.model.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -77,10 +78,11 @@ public class HydraAdminClient {
     public OAuth2RedirectTo acceptConsentRequest(
             @NonNull String consentChallenge,
             boolean remember,
+            @NonNull List<String> scopes,
             @NonNull OAuth2ConsentRequest consentRequest
     ) {
         val acceptConsentRequest = new AcceptOAuth2ConsentRequest();
-        acceptConsentRequest.setGrantScope(consentRequest.getRequestedScope());
+        acceptConsentRequest.setGrantScope(scopes);
         acceptConsentRequest.setGrantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience());
         acceptConsentRequest.remember(remember);
         acceptConsentRequest.rememberFor(DEFAULT_SESSION_EXPIRATION_IN_SECONDS);

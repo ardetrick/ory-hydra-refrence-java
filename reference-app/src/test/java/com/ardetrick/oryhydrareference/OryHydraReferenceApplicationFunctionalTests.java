@@ -126,9 +126,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		oAuth2Client.clientSecret("client-secret");
 		oAuth2Client.scope(String.join(" ", "offline_access", "openid", "offline", "profile"));
 
-		// TODO: documentation states these are optional but an error is thrown when not provided.
+		// Documentation states these are optional but an error is thrown when not provided.
 		oAuth2Client.authorizationCodeGrantAccessTokenLifespan("1h");
-		oAuth2Client.setAuthorizationCodeGrantRefreshTokenLifespan("1h");
+		oAuth2Client.authorizationCodeGrantRefreshTokenLifespan("1h");
 		oAuth2Client.authorizationCodeGrantIdTokenLifespan("1h");
 		oAuth2Client.clientCredentialsGrantAccessTokenLifespan("1h");
 		oAuth2Client.contacts(ImmutableList.of());
@@ -136,7 +136,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		oAuth2Client.implicitGrantIdTokenLifespan("1h");
 		oAuth2Client.jwtBearerGrantAccessTokenLifespan("1h");
 		oAuth2Client.refreshTokenGrantAccessTokenLifespan("1h");
-		oAuth2Client.setRefreshTokenGrantRefreshTokenLifespan("1h");
+		oAuth2Client.refreshTokenGrantRefreshTokenLifespan("1h");
 		oAuth2Client.refreshTokenGrantIdTokenLifespan("1h");
 
 		// Initialize API
@@ -254,6 +254,50 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		assertThat(decodedJWT.getClaim("exampleCustomClaimKey").asString())
 				.isNotNull()
 				.isEqualTo("example custom claim value");
+	}
+
+	@Test
+	public void completeFlowWithPartialScopeSelection() {
+		val screenshotPathProducer = ScreenshotPathProducer.builder()
+				.testName("completeFlowWithPartialScopeSelection")
+				.build();
+
+		val page = browser.newPage();
+
+		val uri = getUriToInitiateFlow();
+
+		page.navigate(uri.toString());
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+
+		page.type("input[name=loginEmail]", "foo@bar.com");
+		page.type("input[name=loginPassword]", "password");
+
+		page.locator("input[name=submit]").click();
+
+		page.waitForLoadState();
+
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+
+		page.locator("input[id=scopes-profile]").uncheck();
+
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-uncheck-scope"));
+
+		page.locator("input[id=accept]").click();
+
+		page.waitForLoadState();
+
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+
+		val code = getCodeFromCallbackCaptor();
+		val token = exchangeCode(code);
+
+		assertThat(token.accessToken())
+				.isNotBlank();
+		assertThat(token.refreshToken())
+				.isNotBlank();
+		assertThat(token.idToken())
+				.isNotBlank();
+		assertThat(token.scope()).doesNotContain("profile");
 	}
 
 	private CodeExchangeResponse exchangeCode(String code) {

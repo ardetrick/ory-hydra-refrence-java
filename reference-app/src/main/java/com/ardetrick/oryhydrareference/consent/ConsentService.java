@@ -9,6 +9,9 @@ import lombok.val;
 import org.springframework.stereotype.Service;
 import sh.ory.hydra.model.OAuth2RedirectTo;
 
+import java.util.List;
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -21,10 +24,15 @@ public class ConsentService {
 
         val skip = consentRequest.getSkip();
         if(Boolean.TRUE.equals(skip)) {
-            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(consentChallenge, true, consentRequest);
+            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(
+                    consentChallenge,
+                    true,
+                    Objects.requireNonNull(consentRequest.getRequestedScope()),
+                    consentRequest
+            );
             return new InitialConsentResponseAcceptedRedirect(acceptConsentResponse.getRedirectTo());
         }
-        return new InitialConsentResponseUIRedirect();
+        return new InitialConsentResponseUIRedirect(consentRequest.getRequestedScope());
     }
 
     public OAuth2RedirectTo processConsentForm(ConsentForm consentForm) {
@@ -33,6 +41,7 @@ public class ConsentService {
         return hydraAdminClient.acceptConsentRequest(
                 consentForm.consentChallenge(),
                 consentForm.isRemember(),
+                consentForm.scopes(),
                 consentRequest
         );
     }
@@ -44,4 +53,4 @@ sealed interface InitialConsentResponse
 }
 
 record InitialConsentResponseAcceptedRedirect(String redirectTo) implements InitialConsentResponse {}
-record InitialConsentResponseUIRedirect() implements InitialConsentResponse {}
+record InitialConsentResponseUIRedirect(List<String> requestedScopes) implements InitialConsentResponse {}

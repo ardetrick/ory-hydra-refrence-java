@@ -1,6 +1,8 @@
 package com.ardetrick.oryhydrareference.consent;
 
-public record ConsentForm(String submit, String consentChallenge, Boolean remember) {
+import java.util.List;
+
+public record ConsentForm(String submit, String consentChallenge, Boolean remember, List<String> scopes) {
 
     /**
      * This field is implemented in HTML as a checkbox. When a checkbox element is not checked in a form

@@ -38,7 +38,8 @@ public class ConsentController {
 
         if (response instanceof InitialConsentResponseUIRedirect) {
             return new ModelAndView("consent")
-                    .addObject("consentChallenge", consentChallenge);
+                    .addObject("consentChallenge", consentChallenge)
+                    .addObject("scopes", ((InitialConsentResponseUIRedirect) response).requestedScopes());
         }
 
         throw new IllegalStateException("Unknown response type: " + response.getClass());
@@ -46,9 +47,9 @@ public class ConsentController {
 
     @PostMapping
     public ModelAndView submitConsentForm(ConsentForm consentForm) {
-        val x = consentService.processConsentForm(consentForm);
+        val oAuth2RedirectTo = consentService.processConsentForm(consentForm);
 
-        return ModelAndViewUtils.redirect(x.getRedirectTo());
+        return ModelAndViewUtils.redirect(oAuth2RedirectTo.getRedirectTo());
     }
 
 }

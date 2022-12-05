@@ -5,13 +5,14 @@
 - [ ] Add documentation explain application with screenshots
 - [ ] Add a fancier UI
 - [ ] Clean up integration tests
+- [ ] Allow rejecting on consent screen
 - [ ] Add more unit tests
 - [ ] Document GitHub actions
-- [ ] Add check boxes for individual scopes
 - [ ] Document OIDC usage
 - [ ] Document playwright usage
 - [ ] Show login errors on login screen
 - [ ] Add playwright traces https://playwright.dev/java/docs/trace-viewer-intro
+- [ ] Log out
 
 ## Notes
 

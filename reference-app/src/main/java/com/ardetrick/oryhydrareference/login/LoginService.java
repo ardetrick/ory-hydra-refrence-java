@@ -34,10 +34,6 @@ public class LoginService {
         hydraAdminClient.getLoginRequest(loginChallenge)
                 .orElseThrow(LoginRequestNotFoundException::new);
 
-        // TODO:
-        // look at request body to see if they accepted the request
-        // - if they denied, call the admin endpoint to reject the request
-
         // Naive authentication logic. In reality this should delegate to a real authentication system.
         if (loginForm.getLoginEmail() == null || loginForm.getLoginPassword() == null) {
             return LoginResult.invalidCredentials();
