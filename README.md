@@ -10,6 +10,9 @@
 - [ ] Document GitHub actions
 - [ ] Document OIDC usage
 - [ ] Document playwright usage
+- [ ] Add CSRF
+- [ ] Show login errors on login screen
+- [ ] Add playwright traces https://playwright.dev/java/docs/trace-viewer-intro
 
 ## Notes
 

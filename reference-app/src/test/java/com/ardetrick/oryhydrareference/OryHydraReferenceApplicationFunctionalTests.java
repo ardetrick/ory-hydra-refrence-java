@@ -2,17 +2,18 @@ package com.ardetrick.oryhydrareference;
 
 import com.ardetrick.oryhydrareference.test.utils.ScreenshotPathProducer;
 import com.ardetrick.oryhydrareference.testcontainers.OryHydraDockerComposeContainer;
+import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URIBuilder;
+import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Playwright;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,10 @@ import static org.mockito.Mockito.verify;
 @TestPropertySource(properties = {"debug=true"})
 public class OryHydraReferenceApplicationFunctionalTests {
 
+	// Shared between all tests in this class.
+	private static Playwright playwright;
+	private static Browser browser;
+
 	@LocalServerPort int springBootAppPort;
 
 	OryHydraDockerComposeContainer<?> dockerComposeEnvironment;
@@ -70,6 +75,17 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
 	@MockBean Consumer<String> queryStringConsumer;
 	@Captor ArgumentCaptor<String> queryStringConsumerArgumentCaptor;
+
+	@BeforeAll
+	static void beforeAll() {
+		playwright = Playwright.create();
+		browser = playwright.chromium().launch();
+	}
+
+	@AfterAll
+	static void afterAll() {
+		playwright.close();
+	}
 
 	@BeforeEach
 	public void beforeEachTest() throws ApiException {
@@ -160,41 +176,11 @@ public class OryHydraReferenceApplicationFunctionalTests {
 	}
 
 	@Test
-	void initialLoginRequestShouldRedirectToLoginUserInterface() throws URISyntaxException, IOException, InterruptedException {
-		URI uri = getUriToInitiateFlow();
-
-		var request = HttpRequest.newBuilder()
-				.uri(uri)
-				.build();
-
-		// Note the use of `followRedirects` - Hydra will redirect this response.
-		var response = HttpClient.newBuilder()
-				.followRedirects(HttpClient.Redirect.NORMAL)
-				.build()
-				.send(request, HttpResponse.BodyHandlers.ofString());
-
-		assertThat(response.statusCode())
-				.isEqualTo(200);
-		assertThat(response.uri().getPath())
-				.isEqualTo("/login");
-		assertThat(response.body())
-				.contains("loginChallenge");
-
-		// start flow
-		// follow IDP steps
-		// exchange code for token
-		// validate token
-	}
-
-	@Test
 	public void loginInvalidCredentials() {
 		val screenshotPathProducer = ScreenshotPathProducer.builder()
 				.testName("loginInvalidCredentials")
 				.build();
 
-		try (val playwright = Playwright.create();
-			 val browser = playwright.webkit().launch();
-		) {
 			val page = browser.newPage();
 			val initiateFlowUri = getUriToInitiateFlow();
 
@@ -210,19 +196,20 @@ public class OryHydraReferenceApplicationFunctionalTests {
 			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
 			assertThat(page.content()).contains("invalid credentials try again");
+	}
+
+	private URI getUriToInitiateFlow() {
+		try {
+			return new URIBuilder(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth"))
+					.addParameter("response_type", "code")
+					.addParameter("client_id", oAuth2Client.getClientId())
+					.addParameter("redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
+					.addParameter("scope", "offline_access openid offline profile")
+					.addParameter("state", "12345678901234567890")
+					.build();
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private URI getUriToInitiateFlow() throws URISyntaxException {
-		return new URIBuilder(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth"))
-				.addParameter("response_type", "code")
-				.addParameter("client_id", oAuth2Client.getClientId())
-				.addParameter("redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
-				.addParameter("scope", "offline_access openid offline profile")
-				.addParameter("state", "12345678901234567890")
-				.build();
 	}
 
 	@Test
@@ -231,81 +218,78 @@ public class OryHydraReferenceApplicationFunctionalTests {
 				.testName("completeFullOAuthFlowUsingUIToLogin")
 				.build();
 
-		try (val playwright = Playwright.create();
-			 val browser = playwright.webkit().launch();
-		) {
-			val page = browser.newPage();
+		val page = browser.newPage();
 
-			val uri = getUriToInitiateFlow();
+		val uri = getUriToInitiateFlow();
 
-			page.navigate(uri.toString());
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+		page.navigate(uri.toString());
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-			page.type("input[name=loginEmail]", "foo@bar.com");
-			page.type("input[name=loginPassword]", "password");
+		page.type("input[name=loginEmail]", "foo@bar.com");
+		page.type("input[name=loginPassword]", "password");
 
-			page.locator("input[name=submit]").click();
+		page.locator("input[name=submit]").click();
 
-			page.waitForLoadState();
+		page.waitForLoadState();
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
-			page.locator("input[id=accept]").click();
+		page.locator("input[id=accept]").click();
 
-			page.waitForLoadState();
+		page.waitForLoadState();
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
 
-			verify(queryStringConsumer)
-					.accept(queryStringConsumerArgumentCaptor.capture());
+		val code = getCodeFromCallbackCaptor();
+		val token = exchangeCode(code);
 
-			val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
+		assertThat(token.accessToken())
+				.isNotBlank();
+		assertThat(token.refreshToken())
+				.isNotBlank();
+		assertThat(token.idToken())
+				.isNotBlank();
 
-			assertThat(queryStringValue).isNotBlank();
+		val decodedJWT = JWT.decode(token.idToken());
+		assertThat(decodedJWT.getClaim("exampleCustomClaimKey").asString())
+				.isNotNull()
+				.isEqualTo("example custom claim value");
+	}
 
-			val maybeCode = Arrays.stream(queryStringValue.split("&"))
-					.filter(x -> x.startsWith("code="))
-					.findFirst()
-					.map(x -> x.replace("code=", ""));
+	private CodeExchangeResponse exchangeCode(String code) {
+		val params = Map.of(
+						"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
+						"code", code,
+						"grant_type", Objects.requireNonNull(Objects.requireNonNull(oAuth2Client.getGrantTypes()).get(0)),
+						"redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0)
+				)
+				.entrySet()
+				.stream()
+				.map(entry -> String.join("=",
+						URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
+						URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
+				).collect(Collectors.joining("&"));
 
-			assertThat(maybeCode)
-					.isNotNull()
-					.isPresent();
+		val request = HttpRequest.newBuilder()
+				.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
+				.header("Content-Type", "application/x-www-form-urlencoded")
+				.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
+				.POST(HttpRequest.BodyPublishers.ofString(params))
+				.build();
 
-			val params = Map.of(
-							"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
-							"code", maybeCode.get(),
-							"grant_type", Objects.requireNonNull(oAuth2Client.getGrantTypes().get(0)),
-							"redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0)
-					)
-					.entrySet()
-					.stream()
-					.map(entry -> String.join("=",
-							URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
-							URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
-					).collect(Collectors.joining("&"));
-
-			val request = HttpRequest.newBuilder()
-					.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
-					.header("Content-Type", "application/x-www-form-urlencoded")
-					.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
-					.POST(HttpRequest.BodyPublishers.ofString(params))
-					.build();
-
-			val codeExchangeResponse = HttpClient.newBuilder().build()
+		HttpResponse<String> codeExchangeResponse = null;
+		try {
+			codeExchangeResponse = HttpClient.newBuilder().build()
 					.send(request, HttpResponse.BodyHandlers.ofString());
+		} catch (IOException | InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 
-			assertThat(codeExchangeResponse.statusCode()).isEqualTo(200);
+		assertThat(codeExchangeResponse.statusCode()).isEqualTo(200);
 
-			val mapped = new ObjectMapper().readValue(codeExchangeResponse.body(), CodeExchangeResponse.class);
-
-			assertThat(mapped.accessToken())
-					.isNotBlank();
-			assertThat(mapped.refreshToken())
-					.isNotBlank();
-			assertThat(mapped.idToken())
-					.isNotBlank();
-		} catch (URISyntaxException | InterruptedException | IOException e) {
+		try {
+			return new ObjectMapper().readValue(codeExchangeResponse.body(), CodeExchangeResponse.class);
+		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -315,80 +299,56 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		val screenshotPathProducer = ScreenshotPathProducer.builder()
 				.testName("skipConsentScreenOnSecondLoginWhenRememberMeIsUsed")
 				.build();
+		val page = browser.newPage();
 
-		try (val playwright = Playwright.create();
-			 val browser = playwright.webkit().launch();
-		) {
-			val page = browser.newPage();
+		val uri = getUriToInitiateFlow();
 
-			val uri = getUriToInitiateFlow();
+		page.navigate(uri.toString());
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-			page.navigate(uri.toString());
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+		page.type("input[name=loginEmail]", "foo@bar.com");
+		page.type("input[name=loginPassword]", "password");
 
-			page.type("input[name=loginEmail]", "foo@bar.com");
-			page.type("input[name=loginPassword]", "password");
+		page.locator("input[name=submit]").click();
 
-			page.locator("input[name=submit]").click();
+		page.waitForLoadState();
 
-			page.waitForLoadState();
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+		page.locator("input[id=accept]").click();
 
-			page.locator("input[id=accept]").click();
+		page.waitForLoadState();
 
-			page.waitForLoadState();
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+		val code = getCodeFromCallbackCaptor();
+		exchangeCode(code);
 
-			verify(queryStringConsumer)
-					.accept(queryStringConsumerArgumentCaptor.capture());
-			val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
-			val maybeCode = Arrays.stream(queryStringValue.split("&"))
-					.filter(x -> x.startsWith("code="))
-					.findFirst()
-					.map(x -> x.replace("code=", ""));
-			val params = Map.of(
-							"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
-							"code", maybeCode.get(),
-							"grant_type", Objects.requireNonNull(oAuth2Client.getGrantTypes().get(0)),
-							"redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0)
-					)
-					.entrySet()
-					.stream()
-					.map(entry -> String.join("=",
-							URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
-							URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
-					).collect(Collectors.joining("&"));
-			val request = HttpRequest.newBuilder()
-					.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
-					.header("Content-Type", "application/x-www-form-urlencoded")
-					.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
-					.POST(HttpRequest.BodyPublishers.ofString(params))
-					.build();
+		page.navigate(getUriToInitiateFlow().toString());
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
 
-			val codeExchangeResponse = HttpClient.newBuilder().build()
-					.send(request, HttpResponse.BodyHandlers.ofString());
+		page.type("input[name=loginEmail]", "foo@bar.com");
+		page.type("input[name=loginPassword]", "password");
 
-			assertThat(codeExchangeResponse.statusCode()).isEqualTo(200);
+		page.locator("input[name=submit]").click();
 
-			page.navigate(getUriToInitiateFlow().toString());
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
+		page.waitForLoadState();
 
-			page.type("input[name=loginEmail]", "foo@bar.com");
-			page.type("input[name=loginPassword]", "password");
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit-second-time"));
 
-			page.locator("input[name=submit]").click();
+		// Consent screen is skipped
+		assertThat(page.url()).contains("/client/callback?code=");
+	}
 
-			page.waitForLoadState();
-
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit-second-time"));
-
-			// Consent screen is skipped
-			assertThat(page.url()).contains("/client/callback?code=");
-		} catch (URISyntaxException | InterruptedException | IOException e) {
-			throw new RuntimeException(e);
-		}
+	private String getCodeFromCallbackCaptor() {
+		verify(queryStringConsumer)
+				.accept(queryStringConsumerArgumentCaptor.capture());
+		val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
+		return Arrays.stream(queryStringValue.split("&"))
+				.filter(queryStringParam -> queryStringParam.startsWith("code="))
+				.findFirst()
+				.map(queryStringParam -> queryStringParam.replace("code=", ""))
+				.orElseThrow();
 	}
 
 	@Test
@@ -397,82 +357,48 @@ public class OryHydraReferenceApplicationFunctionalTests {
 				.testName("doNotSkipConsentScreenOnSecondLoginWhenRememberMeIsFalse")
 				.build();
 
-		try (val playwright = Playwright.create();
-			 val browser = playwright.webkit().launch();
-		) {
-			val page = browser.newPage();
+		val page = browser.newPage();
 
-			val uri = getUriToInitiateFlow();
+		val uri = getUriToInitiateFlow();
 
-			page.navigate(uri.toString());
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+		page.navigate(uri.toString());
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-			page.type("input[name=loginEmail]", "foo@bar.com");
-			page.type("input[name=loginPassword]", "password");
+		page.type("input[name=loginEmail]", "foo@bar.com");
+		page.type("input[name=loginPassword]", "password");
 
-			page.locator("input[name=submit]").click();
+		page.locator("input[name=submit]").click();
 
-			page.waitForLoadState();
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+		page.waitForLoadState();
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
-			page.locator("input[id=remember]").uncheck();
+		page.locator("input[id=remember]").uncheck();
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-uncheck"));
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-uncheck"));
 
-			page.locator("input[id=accept]").click();
+		page.locator("input[id=accept]").click();
 
-			page.waitForLoadState();
+		page.waitForLoadState();
 
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
 
-			verify(queryStringConsumer)
-					.accept(queryStringConsumerArgumentCaptor.capture());
-			val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
-			val maybeCode = Arrays.stream(queryStringValue.split("&"))
-					.filter(x -> x.startsWith("code="))
-					.findFirst()
-					.map(x -> x.replace("code=", ""));
-			val params = Map.of(
-							"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
-							"code", maybeCode.get(),
-							"grant_type", Objects.requireNonNull(oAuth2Client.getGrantTypes().get(0)),
-							"redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0)
-					)
-					.entrySet()
-					.stream()
-					.map(entry -> String.join("=",
-							URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
-							URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
-					).collect(Collectors.joining("&"));
-			val request = HttpRequest.newBuilder()
-					.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
-					.header("Content-Type", "application/x-www-form-urlencoded")
-					.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
-					.POST(HttpRequest.BodyPublishers.ofString(params))
-					.build();
+		val code = getCodeFromCallbackCaptor();
+		exchangeCode(code);
 
-			val codeExchangeResponse = HttpClient.newBuilder().build()
-					.send(request, HttpResponse.BodyHandlers.ofString());
+		page.navigate(getUriToInitiateFlow().toString());
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
 
-			assertThat(codeExchangeResponse.statusCode()).isEqualTo(200);
+		page.type("input[name=loginEmail]", "foo@bar.com");
+		page.type("input[name=loginPassword]", "password");
 
-			page.navigate(getUriToInitiateFlow().toString());
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
+		page.locator("input[name=submit]").click();
 
-			page.type("input[name=loginEmail]", "foo@bar.com");
-			page.type("input[name=loginPassword]", "password");
+		page.waitForLoadState();
 
-			page.locator("input[name=submit]").click();
+		page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit-second-time"));
 
-			page.waitForLoadState();
-
-			page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit-second-time"));
-
-			// Consent screen is not skipped
-			assertThat(page.url()).contains("/consent");
-		} catch (URISyntaxException | InterruptedException | IOException e) {
-			throw new RuntimeException(e);
-		}
+		// Consent screen is not skipped
+		assertThat(page.url()).contains("/consent");
 	}
 
 }
@@ -495,7 +421,7 @@ class ForwardingController {
 	@Autowired OryHydraReferenceApplication.Config config;
 
 	@GetMapping("oauth2/auth")
-	public RedirectView oauth2Auth(HttpServletRequest request) {
+	public RedirectView oauth2Auth() {
 		val redirectView = new RedirectView(config.oryHydraPublicUri + "/oauth2/auth");
 		redirectView.setPropagateQueryParams(true);
 		return redirectView;

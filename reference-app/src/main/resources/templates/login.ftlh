@@ -6,15 +6,18 @@
 <body>
 <h2>Log In</h2>
 <form action="/login/usernamePassword" method="post">
-  <!-- TODO: implement csrf protection -->
   <!--<input type="hidden" name="csrf_token" value="...." />-->
   <input type="hidden" name="loginChallenge" value="${loginChallenge}" />
-  <input type="email" name="loginEmail" placeholder="foo@bar.com" />
-  <input type="password" name="loginPassword" placeholder="password" />
-  <input type="submit" name="submit" value="Log in" />
 
-  <!-- TODO show error messages in a better way -->
-  ${(error)!}
+  <label for="loginEmail">Email:</label><br>
+  <input type="email" name="loginEmail" placeholder="foo@bar.com" />
+  <label for="loginPassword">Password:</label><br>
+  <input type="password" name="loginPassword" placeholder="password" />
+
+  <input type="submit" name="submit" value="Log in" />
 </form>
+
+<p>${(error)!}</p>
+
 </body>
 </html>

@@ -85,7 +85,15 @@ public class HydraAdminClient {
         acceptConsentRequest.remember(remember);
         acceptConsentRequest.rememberFor(DEFAULT_SESSION_EXPIRATION_IN_SECONDS);
 
-        // TODO: session, remember, rememberFor
+        val acceptOAuth2ConsentRequestSession = new AcceptOAuth2ConsentRequestSession();
+
+        // An example of setting custom claims.
+        record ExampleCustomClaims(String exampleCustomClaimKey) {}
+        acceptOAuth2ConsentRequestSession.setIdToken(
+                new ExampleCustomClaims("example custom claim value")
+        );
+        acceptConsentRequest.setSession(acceptOAuth2ConsentRequestSession);
+
         try {
             return oAuth2Api.acceptOAuth2ConsentRequest(consentChallenge, acceptConsentRequest);
         } catch (ApiException e) {
