@@ -55,7 +55,7 @@ public class LoginController {
     ) {
         val redirectUrl = loginService.processSubmittedLoginRequest(loginForm.getLoginChallenge(), loginForm);
         if (redirectUrl.redirectUrl() != null) {
-            return ModelAndViewUtils.redirect(redirectUrl.redirectUrl());
+            return ModelAndViewUtils.redirectToDifferentContext(redirectUrl.redirectUrl());
         }
 
         val loginModelAndView = new ModelAndView();

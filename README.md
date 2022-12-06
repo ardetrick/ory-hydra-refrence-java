@@ -12,6 +12,7 @@
 - [ ] Document playwright usage
 - [ ] Show login errors on login screen
 - [ ] Add playwright traces https://playwright.dev/java/docs/trace-viewer-intro
+- [ ] Document how to run locally with a local docker hydra instance
 - [ ] Log out
 
 ## Notes

@@ -29,7 +29,7 @@ public class InitialLoginResult {
 
     public ModelAndView toModelAndView() {
         if (redirectUrl != null) {
-            return ModelAndViewUtils.redirect(redirectUrl);
+            return ModelAndViewUtils.redirectToDifferentContext(redirectUrl);
         }
 
         val loginModelAndView = new ModelAndView();

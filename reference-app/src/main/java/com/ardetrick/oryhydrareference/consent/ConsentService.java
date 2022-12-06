@@ -1,5 +1,6 @@
 package com.ardetrick.oryhydrareference.consent;
 
+import com.ardetrick.oryhydrareference.hydra.AcceptConsentRequest;
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
 import lombok.AccessLevel;
 import lombok.NonNull;
@@ -7,10 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
 import org.springframework.stereotype.Service;
-import sh.ory.hydra.model.OAuth2RedirectTo;
-
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -19,38 +16,38 @@ public class ConsentService {
 
     @NonNull HydraAdminClient hydraAdminClient;
 
-    public InitialConsentResponse processInitialConsentRequest(@NonNull String consentChallenge) {
+    public ConsentResponse processInitialConsentRequest(@NonNull final String consentChallenge) {
         val consentRequest = hydraAdminClient.getConsentRequest(consentChallenge);
 
-        val skip = consentRequest.getSkip();
-        if(Boolean.TRUE.equals(skip)) {
-            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(
-                    consentChallenge,
-                    true,
-                    Objects.requireNonNull(consentRequest.getRequestedScope()),
-                    consentRequest
-            );
-            return new InitialConsentResponseAcceptedRedirect(acceptConsentResponse.getRedirectTo());
+        if (Boolean.TRUE.equals(consentRequest.getSkip())) {
+            val acceptConsentRequest = AcceptConsentRequest.builder()
+                    .consentChallenge(consentChallenge)
+                    .remember(true)
+                    .grantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience())
+                    .scopes(consentRequest.getRequestedScope())
+                    .build();
+            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
+            return new ConsentResponseSkip(acceptConsentResponse.getRedirectTo());
         }
-        return new InitialConsentResponseUIRedirect(consentRequest.getRequestedScope());
+
+        return new ConsentResponseRequiresUIDisplay(consentRequest.getRequestedScope(), consentChallenge);
     }
 
-    public OAuth2RedirectTo processConsentForm(ConsentForm consentForm) {
-        val consentRequest = hydraAdminClient.getConsentRequest(consentForm.consentChallenge());
+    public ConsentResponse processConsentForm(@NonNull final ConsentForm consentForm) {
+        val consentChallenge = consentForm.consentChallenge();
 
-        return hydraAdminClient.acceptConsentRequest(
-                consentForm.consentChallenge(),
-                consentForm.isRemember(),
-                consentForm.scopes(),
-                consentRequest
-        );
+        val consentRequest = hydraAdminClient.getConsentRequest(consentChallenge);
+
+        val acceptConsentRequest = AcceptConsentRequest.builder()
+                .consentChallenge(consentChallenge)
+                .remember(consentForm.isRemember())
+                .grantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience())
+                .scopes(consentForm.scopes())
+                .build();
+
+        val oauth2RedirectTo = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
+
+        return new ConsentResponseAccepted(oauth2RedirectTo.getRedirectTo());
     }
 
 }
-
-sealed interface InitialConsentResponse
-        permits InitialConsentResponseAcceptedRedirect, InitialConsentResponseUIRedirect {
-}
-
-record InitialConsentResponseAcceptedRedirect(String redirectTo) implements InitialConsentResponse {}
-record InitialConsentResponseUIRedirect(List<String> requestedScopes) implements InitialConsentResponse {}

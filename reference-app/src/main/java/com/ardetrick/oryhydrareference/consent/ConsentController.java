@@ -1,6 +1,5 @@
 package com.ardetrick.oryhydrareference.consent;
 
-import com.ardetrick.oryhydrareference.modelandview.ModelAndViewUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -28,28 +27,17 @@ public class ConsentController {
      * <a href="https://www.ory.sh/docs/hydra/concepts/consent">...</a>
      */
     @GetMapping
-    public ModelAndView consentEndpoint(@RequestParam("consent_challenge") String consentChallenge) {
+    public ModelAndView consentEndpoint(@RequestParam("consent_challenge") final String consentChallenge) {
         val response = consentService.processInitialConsentRequest(consentChallenge);
-        if (response instanceof InitialConsentResponseAcceptedRedirect) {
-            return ModelAndViewUtils.redirect(
-                    ((InitialConsentResponseAcceptedRedirect) response).redirectTo()
-            );
-        }
 
-        if (response instanceof InitialConsentResponseUIRedirect) {
-            return new ModelAndView("consent")
-                    .addObject("consentChallenge", consentChallenge)
-                    .addObject("scopes", ((InitialConsentResponseUIRedirect) response).requestedScopes());
-        }
-
-        throw new IllegalStateException("Unknown response type: " + response.getClass());
+        return ConsentModelAndViewMapper.map(response);
     }
 
     @PostMapping
-    public ModelAndView submitConsentForm(ConsentForm consentForm) {
-        val oAuth2RedirectTo = consentService.processConsentForm(consentForm);
+    public ModelAndView submitConsentForm(final ConsentForm consentForm) {
+        val consentResponse = consentService.processConsentForm(consentForm);
 
-        return ModelAndViewUtils.redirect(oAuth2RedirectTo.getRedirectTo());
+        return ConsentModelAndViewMapper.map(consentResponse);
     }
 
 }
