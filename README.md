@@ -1,5 +1,68 @@
 # Ory Hydra Reference Implementation - Java
 
+This is an _unofficial_ reference implementation of the User Login and Consent flow of an 
+[Ory Hydra](https://github.com/ory) OAuth 2.0 server written in Java with SpringBoot. This project demos some
+key features/flows/integrations and aims to be a foundation for production implementations but it is not an exhaustive
+implementation nor is guaranteed to be secure, bug free, fully tested, or production ready.
+
+Similar reference implementations can be found on the [Getting Started](https://www.ory.sh/docs/getting-started/overview)
+page of the official Ory website.
+
+## Introduction
+
+Ory Hydra is an open source project OpenID Certified OAuth 2.0 Server and OpenID Connect Provider. Ory Hydra is not an
+identity provider (user sign up, user login, password reset flow), but connects to your existing identity provider
+through a login and consent app. This project is an example of such a login and consent app. It aims to be a useful
+reference for other Java implementations, providing insight into not only how to integrate with Ory Hydra but also how
+to effectively test the entirety of the system using SpringBootTest, Test Containers, and Playwright.
+
+The following features have been implemented:
+- [Login](https://www.ory.sh/docs/hydra/guides/login)
+- [Consent](https://www.ory.sh/docs/hydra/guides/consent)
+- [OIDC](https://www.ory.sh/docs/hydra/concepts/openid-connect-oidc) (with custom claims)
+
+Similar products include but are not limited to:
+- [Spring Authorization Server](https://spring.io/projects/spring-authorization-server)
+- [Auth0](https://auth0.com/docs/authenticate/protocols/oauth)
+- [Keycloak](https://www.keycloak.org/)
+- [Amazon Cognito](https://docs.aws.amazon.com/cognito/index.html)
+- [Dex](https://dexidp.io/)
+
+## Prerequisites: What do you need to get started?
+
+- Java 17+
+- Docker (only required for running tests)
+
+## Technologies Used
+
+- Java 17+
+- SpringBoot
+- Gradle
+- Test Containers
+- Ory Hydra
+- Docker
+- Freemarker
+- Lombok
+- GitHub Actions
+
+## Running
+
+### Running Functional Tests
+
+### Running With Local Ory Hydra
+
+## Example Flows
+
+### Full OAuth Flow With OIDC
+
+### Use 'Remember Me' To Skip Consent Screen
+
+## GitHub Actions
+
+## Playwright
+
+## Test Containers
+
 ## Task List
 
 - [ ] Add documentation explain application with screenshots
@@ -14,6 +77,7 @@
 - [ ] Add playwright traces https://playwright.dev/java/docs/trace-viewer-intro
 - [ ] Document how to run locally with a local docker hydra instance
 - [ ] Log out
+- [ ] Add example with Ory Cloud
 
 ## Notes
 

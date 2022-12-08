@@ -1,5 +1,6 @@
 package com.ardetrick.oryhydrareference;
 
+import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
 import com.ardetrick.oryhydrareference.test.utils.ScreenshotPathProducer;
 import com.ardetrick.oryhydrareference.testcontainers.OryHydraDockerComposeContainer;
 import com.auth0.jwt.JWT;
@@ -71,7 +72,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
 	OAuth2Client oAuth2Client;
 
-	@Autowired OryHydraReferenceApplication.Config config;
+	@Autowired HydraAdminClient.Properties properties;
 
 	@MockBean Consumer<String> queryStringConsumer;
 	@Captor ArgumentCaptor<String> queryStringConsumerArgumentCaptor;
@@ -105,7 +106,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		// (this follows testing best practices where hard coding ports should be avoided in case the host machine is
 		// already using that port). There may be a cleaner approach out there (perhaps using Docker Networking?) but
 		// in the meantime this is a low cost and sufficient work around.
-		config.oryHydraPublicUri = dockerComposeEnvironment.publicBaseUriString();
+		properties.setBasePath(dockerComposeEnvironment.publicBaseUriString());
 	}
 
 	@AfterEach
@@ -462,11 +463,11 @@ record CodeExchangeResponse(
 @RequestMapping("/integration-test-public-proxy")
 class ForwardingController {
 
-	@Autowired OryHydraReferenceApplication.Config config;
+	@Autowired HydraAdminClient.Properties properties;
 
 	@GetMapping("oauth2/auth")
 	public RedirectView oauth2Auth() {
-		val redirectView = new RedirectView(config.oryHydraPublicUri + "/oauth2/auth");
+		val redirectView = new RedirectView(properties.getBasePath() + "/oauth2/auth");
 		redirectView.setPropagateQueryParams(true);
 		return redirectView;
 	}

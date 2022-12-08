@@ -1,8 +1,12 @@
 package com.ardetrick.oryhydrareference.hydra;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 import sh.ory.hydra.ApiException;
 import sh.ory.hydra.Configuration;
@@ -12,21 +16,19 @@ import sh.ory.hydra.model.OAuth2ConsentRequest;
 import sh.ory.hydra.model.OAuth2LoginRequest;
 import sh.ory.hydra.model.OAuth2RedirectTo;
 
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class HydraAdminClient {
 
     @NonNull OAuth2Api oAuth2Api;
 
-    HydraAdminClient() {
-        val defaultClient = Configuration.getDefaultApiClient()
-                        .setBasePath("http://localhost");
-        oAuth2Api = new OAuth2Api(defaultClient);
+    HydraAdminClient(@NonNull final HydraAdminClient.Properties properties) {
+        val apiClient = Configuration.getDefaultApiClient()
+                        .setBasePath(properties.getBasePath());
+        oAuth2Api = new OAuth2Api(apiClient);
     }
 
     /**
@@ -89,6 +91,15 @@ public class HydraAdminClient {
                 default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
             }
         }
+    }
+
+    @Data
+    @org.springframework.context.annotation.Configuration
+    @ConfigurationProperties("reference-app.hydra")
+    public static class Properties {
+
+        String basePath;
+
     }
 
 }

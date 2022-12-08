@@ -2,9 +2,7 @@ package com.ardetrick.oryhydrareference;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -21,14 +19,6 @@ public class OryHydraReferenceApplication {
 		// https://docs.spring.io/spring-security/reference/features/exploits/csrf.html
 		// https://docs.spring.io/spring-security/site/docs/5.0.x/reference/html/csrf.html
 		return http.build();
-	}
-
-	@ConfigurationProperties("reference-app")
-	@Configuration
-	static class Config {
-
-		String oryHydraPublicUri;
-
 	}
 
 }
