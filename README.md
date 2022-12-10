@@ -171,10 +171,10 @@ token can then be used to access the user's resources on the resource server.
 ```mermaid
 sequenceDiagram
     participant User
-    participant User-Agent
-    participant OAuth Client (Server)
-    participant Identity Provider
-    participant Authorization Server
+    participant User Agent (Browser)
+    participant OAuth Client (Backend Server)
+    participant Identity Provider (Login/Consent)
+    participant Authorization Server (Hydra)
 ```
 
 ## Example Flows
