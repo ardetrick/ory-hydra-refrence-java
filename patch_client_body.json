@@ -1,0 +1,57 @@
+[
+  {
+    "op": "replace",
+    "path": "/authorization_code_grant_access_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/authorization_code_grant_id_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/authorization_code_grant_refresh_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/client_credentials_grant_access_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/contacts",
+    "value": []
+  },
+  {
+    "op": "replace",
+    "path": "/implicit_grant_access_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/implicit_grant_id_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/jwt_bearer_grant_access_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/refresh_token_grant_access_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/refresh_token_grant_refresh_token_lifespan",
+    "value": "1h"
+  },
+  {
+    "op": "replace",
+    "path": "/refresh_token_grant_id_token_lifespan",
+    "value": "1h"
+  }
+]

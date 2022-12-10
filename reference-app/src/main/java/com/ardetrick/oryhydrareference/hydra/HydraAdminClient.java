@@ -98,7 +98,7 @@ public class HydraAdminClient {
     @ConfigurationProperties("reference-app.hydra")
     public static class Properties {
 
-        String basePath;
+        String basePath = "http://localhost:4445";
 
     }
 

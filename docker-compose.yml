@@ -17,8 +17,9 @@ services:
         source: ./volume
         target: /etc/config/hydra
     environment:
-      - URLS_LOGIN=http://localhost:8080
-      - URLS_SELF_ISSUER=http://localhost:8080
+      - URLS_LOGIN=http://localhost:8080/login
+      - URLS_CONSENT=http://localhost:8080/consent
+      - URLS_SELF_ISSUER=http://localhost:4444
       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
     restart: unless-stopped
     depends_on:
