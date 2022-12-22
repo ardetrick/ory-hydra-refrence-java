@@ -128,6 +128,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		oAuth2Client.scope(String.join(" ", "offline_access", "openid", "offline", "profile"));
 
 		// Documentation states these are optional but an error is thrown when not provided.
+		// https://github.com/ory/hydra/issues/3360#issuecomment-1362244324
 		oAuth2Client.authorizationCodeGrantAccessTokenLifespan("1h");
 		oAuth2Client.authorizationCodeGrantRefreshTokenLifespan("1h");
 		oAuth2Client.authorizationCodeGrantIdTokenLifespan("1h");

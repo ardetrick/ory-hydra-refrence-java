@@ -29,6 +29,8 @@ Similar products include but are not limited to:
 - [Amazon Cognito](https://docs.aws.amazon.com/cognito/index.html)
 - [Dex](https://dexidp.io/)
 
+Whatever you choose, do not write the oauth endpoints yourself!
+
 ## Prerequisites: What do you need to get started?
 
 - Java 17+
@@ -213,25 +215,45 @@ A visual guide of walking through the flow from login to code.
 
 First step is to log in.
 
-![login screen](docs/images/1-initial-load.png)
+![login screen](docs/images/full-oauth-flow-oidc/1-initial-load.png)
 
 Then scopes are requested.
 
-![requested scopes screen](docs/images/2-after-login-submit.png)
+![requested scopes screen](docs/images/full-oauth-flow-oidc/2-after-login-submit.png)
 
 Finally, the browser is redirected to the client where the code can be exchanged.
 
-![code sent to client](docs/images/3-after-consent-submit.png)
+![code sent to client](docs/images/full-oauth-flow-oidc/3-after-consent-submit.png)
 
 After exchanging the code the client will have a JWT (not pictured).
 
 ### Use 'Remember Me' To Skip Consent Screen
 
-TODO
+Demonstrates the impact of the "remember me" functionality. On first iteration of login, the scope screen is displayed.
+On the second attempt to login (requesting the same set of scopes in the oauth url) that UI step is skipped.
+
+Login:
+
+![login](docs/images/remember-me/1-initial-load.png)
+
+Select scopes: 
+
+![select scopes](docs/images/remember-me/2-after-login-submit.png)
+
+Get token:
+
+![get token](docs/images/remember-me/3-after-consent-submit.png)
+
+Login again:
+
+![login again](docs/images/remember-me/4-initial-load-second-time.png)
+
+Get token (no scopes screen):
+
+![get token](docs/images/remember-me/5-after-login-submit-second-time.png)
 
 ## Task List
 
-- [ ] Add documentation explain application with screenshots
 - [ ] Add a fancier UI
 - [ ] Clean up integration tests
 - [ ] Allow rejecting on consent screen
