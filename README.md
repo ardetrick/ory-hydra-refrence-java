@@ -213,7 +213,25 @@ sequenceDiagram
 
 ### Full OAuth Flow With OIDC
 
+A visual guide of walking through the flow from login to code.
+
+First step is to log in.
+
+![login screen](docs/images/1-initial-load.png)
+
+Then scopes are requested.
+
+![requested scopes screen](docs/images/2-after-login-submit.png)
+
+Finally, the browser is redirected to the client where the code can be exchanged.
+
+![code sent to client](docs/images/3-after-consent-submit.png)
+
+After exchanging the code the client will have a JWT (not pictured).
+
 ### Use 'Remember Me' To Skip Consent Screen
+
+
 
 ## GitHub Actions
 
