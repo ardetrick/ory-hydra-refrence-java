@@ -94,8 +94,6 @@ Running the application and Ory Hydra locally is a useful way to manually intera
 following commands to start Hydra, configure a client, and start the reference application. Note: this does require
 Docker and `jq`.
 
-
-
 ```
 # All commands should be run in the root of this project.
 # It is expected Docker is running and jq is installed.
@@ -168,8 +166,6 @@ authenticate and authorize the client's access to the user's resources. If the u
 server sends an authorization code to the client, which the client can then exchange for an access token. The access
 token can then be used to access the user's resources on the resource server.
 
-MERMAID DOCUMENT IS A WORK IN PROGRESS:
-
 ```mermaid
 sequenceDiagram
     autonumber
@@ -231,9 +227,7 @@ After exchanging the code the client will have a JWT (not pictured).
 
 ### Use 'Remember Me' To Skip Consent Screen
 
-
-
-## GitHub Actions
+TODO
 
 ## Task List
 
@@ -242,7 +236,6 @@ After exchanging the code the client will have a JWT (not pictured).
 - [ ] Clean up integration tests
 - [ ] Allow rejecting on consent screen
 - [ ] Add more unit tests
-- [ ] Document GitHub actions
 - [ ] Document OIDC usage
 - [ ] Document playwright usage
 - [ ] Show login errors on login screen
