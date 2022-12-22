@@ -3,7 +3,7 @@
 This is an _unofficial_ reference implementation of the User Login and Consent flow of an 
 [Ory Hydra](https://github.com/ory) OAuth 2.0 server written in Java with SpringBoot. This project demos some
 key features/flows/integrations and the of OAuth 2.0 Authorization Code Grant flow. It is mean to be a foundation for
-production implementations but it is not an exhaustive implementation nor is guaranteed to be secure, bug free, fully
+production implementations, but it is not an exhaustive implementation nor is guaranteed to be secure, bug free, fully
 tested, or production ready.
 
 Similar reference implementations can be found on the [Getting Started](https://www.ory.sh/docs/getting-started/overview)
@@ -168,13 +168,45 @@ authenticate and authorize the client's access to the user's resources. If the u
 server sends an authorization code to the client, which the client can then exchange for an access token. The access
 token can then be used to access the user's resources on the resource server.
 
+MERMAID DOCUMENT IS A WORK IN PROGRESS:
+
 ```mermaid
 sequenceDiagram
+    autonumber
     participant User
-    participant User Agent (Browser)
-    participant OAuth Client (Backend Server)
-    participant Identity Provider (Login/Consent)
-    participant Authorization Server (Hydra)
+    participant User Agent
+    participant Identity Provider
+    participant Authorization Server
+    participant OAuth Client Server
+    User->>+User Agent: Requests /oauth2/auth endpoint.
+    User Agent->>+Authorization Server: Requests /oauth2/auth endpoint.
+    Authorization Server->>-User Agent: Return 302 to LOGIN_URL.
+    User Agent->>+Identity Provider: Follow redirect (302) to LOGIN_URL.
+    Identity Provider->>-User Agent: Return login HTML.
+    User Agent->>-User: Prompt for login credentials.
+    User->>User Agent: Enter credentials.
+    User->>+User Agent: Submit form.
+    User Agent->>+Identity Provider: Submit form.
+    Identity Provider->>Identity Provider: Validate credentials.
+    Identity Provider->>User Agent: Return 302 to auth server.
+    User Agent->>Authorization Server: Follow redirect for consent.
+    Authorization Server->>User Agent: Return 302 to CONSENT_URL.
+    User Agent->>Identity Provider: Follow 302 to CONSENT_URL.
+    Identity Provider->>User Agent: Return consent HTML.
+    User Agent->>User: Prompt for consent.
+    User->>User Agent: Submit consent form.
+    User Agent->>Identity Provider: Verify consent submission.
+    Identity Provider->>User Agent: Redirect 302 redirect to auth server.
+    User Agent->>Authorization Server: Follow redirect.
+    Authorization Server->>Authorization Server: Complete flow.
+    Authorization Server->>User Agent: Redirect 302 with code in query param.
+    User Agent->>OAuth Client Server: Send code to be exchanged.    
+    OAuth Client Server->>Authorization Server: Exchange code (include client ID and secret).
+    Authorization Server->>Authorization Server: Validate exchange request.
+    Authorization Server->>OAuth Client Server: Return token response.
+    OAuth Client Server->>OAuth Client Server: Process token response.
+    OAuth Client Server->>User Agent: Direct browser accordingly.
+    User Agent->>User: User is authed!
 ```
 
 ## Example Flows
@@ -197,7 +229,6 @@ sequenceDiagram
 - [ ] Document playwright usage
 - [ ] Show login errors on login screen
 - [ ] Add playwright traces https://playwright.dev/java/docs/trace-viewer-intro
-- [ ] Document how to run locally with a local docker hydra instance
 - [ ] Log out
 - [ ] Add example with Ory Cloud
 
