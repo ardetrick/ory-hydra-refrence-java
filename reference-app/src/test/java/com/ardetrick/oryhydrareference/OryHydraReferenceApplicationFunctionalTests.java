@@ -49,6 +49,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.ardetrick.oryhydrareference.ClientCallBackController.CLIENT_CALL_BACK_PATH;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -94,10 +95,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		// An alternative approach would be to start the container once and re-use it across all tests.
 		// However, @BeforeAllTests requires the method be static but @LocalServerPort is unavailable statically.
 		// Creating the containers for each test increases test execution time but keeps all tests isolated.
-		dockerComposeEnvironment = new OryHydraDockerComposeContainer<>(springBootAppPort);
-		dockerComposeEnvironment.start();
-
-		oAuth2Client = createOAuthClient();
+		dockerComposeEnvironment = OryHydraDockerComposeContainer.start(springBootAppPort);
 
 		// A "cheat" to break a circular dependency where the reference application needs to know the URI of Ory Hydra
 		// and Ory Hydra needs to know the URI of the reference application. In a production application these two URIs
@@ -107,6 +105,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		// already using that port). There may be a cleaner approach out there (perhaps using Docker Networking?) but
 		// in the meantime this is a low cost and sufficient work around.
 		properties.setBasePath(dockerComposeEnvironment.publicBaseUriString());
+
+		oAuth2Client = createOAuthClient();
 	}
 
 	@AfterEach
@@ -118,7 +118,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 	private OAuth2Client createOAuthClient() throws ApiException {
 		val oAuth2Client = new OAuth2Client();
 		oAuth2Client.clientName("test-client");
-		oAuth2Client.redirectUris(List.of("http://localhost:" + springBootAppPort + "/client/callback"));
+		oAuth2Client.redirectUris(List.of("http://localhost:" + springBootAppPort + CLIENT_CALL_BACK_PATH));
 		oAuth2Client.grantTypes(List.of(
 				"authorization_code",
 				"refresh_token"
@@ -163,7 +163,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 	 */
 	@Test
 	void requestToJwksUriReturns200() throws IOException, InterruptedException {
-		val request = HttpRequest.newBuilder(getPublicJwksUri()).build();
+		val request = HttpRequest.newBuilder(dockerComposeEnvironment.getPublicJwksUri()).build();
 		val response = HttpClient.newHttpClient().send(
 				request,
 				HttpResponse.BodyHandlers.ofString()
@@ -171,10 +171,6 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
 		assertThat(response.statusCode())
 				.isEqualTo(200);
-	}
-
-	private URI getPublicJwksUri() {
-		return URI.create(dockerComposeEnvironment.publicBaseUriString() + "/.well-known/jwks.json");
 	}
 
 	@Test
@@ -202,7 +198,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
 	private URI getUriToInitiateFlow() {
 		try {
-			return new URIBuilder(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth"))
+			return new URIBuilder(dockerComposeEnvironment.getOAuth2AuthUri())
 					.addParameter("response_type", "code")
 					.addParameter("client_id", oAuth2Client.getClientId())
 					.addParameter("redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
@@ -303,7 +299,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 	}
 
 	private CodeExchangeResponse exchangeCode(String code) {
-		val params = Map.of(
+		val encodedParams = Map.of(
 						"client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
 						"code", code,
 						"grant_type", Objects.requireNonNull(Objects.requireNonNull(oAuth2Client.getGrantTypes()).get(0)),
@@ -320,10 +316,10 @@ public class OryHydraReferenceApplicationFunctionalTests {
 				.uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
 				.header("Content-Type", "application/x-www-form-urlencoded")
 				.header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
-				.POST(HttpRequest.BodyPublishers.ofString(params))
+				.POST(HttpRequest.BodyPublishers.ofString(encodedParams))
 				.build();
 
-		HttpResponse<String> codeExchangeResponse = null;
+		HttpResponse<String> codeExchangeResponse;
 		try {
 			codeExchangeResponse = HttpClient.newBuilder().build()
 					.send(request, HttpResponse.BodyHandlers.ofString());
@@ -459,6 +455,12 @@ record CodeExchangeResponse(
 		@JsonProperty("token_type") String tokenType
 ) {}
 
+/**
+ * A controller that exposes an endpoint which acts as a proxy to the oauth server. This proxy is used to break the
+ * unfortunate circular dependency between Hydra and the reference app. They each need to know about each other at
+ * startup, but within the context of testing both are using random ports, so it is impossible for each to know
+ * about each other until after the ports have been assigned. By using this proxy the cycle is broken. The reference
+ */
 @TestComponent
 @Controller
 @RequestMapping("/integration-test-public-proxy")
@@ -481,10 +483,20 @@ class ForwardingController {
 
 }
 
+/**
+ * A controller that mocks a client call back. Upon receiving a request it invokes a consumer, providing a hook for
+ * tests to 1) assert that the callback was made and 2) use an argument captor to access the query string. This makes it
+ * possible for a test to then parse the query string to get the "code" parameter and exchange it with the auth server
+ * for the token response.
+ * <p>
+ * An alternative approach would be to start an entirely separate app but that seemed like more hassle than is worth it.
+ */
 @TestComponent
 @RestController
-@RequestMapping("/client/callback")
+@RequestMapping(CLIENT_CALL_BACK_PATH)
 class ClientCallBackController {
+
+	public static final String CLIENT_CALL_BACK_PATH = "/client/callback";
 
 	@Autowired Consumer<String> queryStringConsumer;
 

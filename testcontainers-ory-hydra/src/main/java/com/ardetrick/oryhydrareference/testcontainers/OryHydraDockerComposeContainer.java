@@ -4,6 +4,7 @@ import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
+import java.net.URI;
 import java.time.Duration;
 
 public class OryHydraDockerComposeContainer<SELF extends OryHydraDockerComposeContainer<SELF>> extends DockerComposeContainer<SELF> {
@@ -12,7 +13,14 @@ public class OryHydraDockerComposeContainer<SELF extends OryHydraDockerComposeCo
     static final int HYDRA_PUBLIC_PORT = 4444;
     static final String SERVICE_NAME = "hydra_1";
 
-    public OryHydraDockerComposeContainer(int port) {
+    public static OryHydraDockerComposeContainer<?> start(int port) {
+        var compose = new OryHydraDockerComposeContainer<>(port);
+        compose.start();
+
+        return compose;
+    }
+
+    OryHydraDockerComposeContainer(int port) {
         this(new File("src/test/resources/hydra-docker-compose.yml"), port);
     }
 
@@ -23,7 +31,6 @@ public class OryHydraDockerComposeContainer<SELF extends OryHydraDockerComposeCo
         this.withEnv("URLS_SELF_ISSUER", "http://localhost:" + port + "/integration-test-public-proxy");
         this.withExposedService(SERVICE_NAME, HYDRA_ADMIN_PORT, Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(10)));
         this.withExposedService(SERVICE_NAME, HYDRA_PUBLIC_PORT, Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(10)));
-
     }
 
     public String adminBaseUriString() {
@@ -39,6 +46,14 @@ public class OryHydraDockerComposeContainer<SELF extends OryHydraDockerComposeCo
                 getServiceHost(SERVICE_NAME, port) +
                 ":" +
                 getServicePort(SERVICE_NAME, port);
+    }
+
+    public URI getOAuth2AuthUri() {
+        return URI.create(publicBaseUriString() + "/oauth2/auth");
+    }
+
+    public URI getPublicJwksUri() {
+        return URI.create(publicBaseUriString() + "/.well-known/jwks.json");
     }
 
 }
