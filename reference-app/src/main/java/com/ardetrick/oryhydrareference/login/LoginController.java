@@ -1,6 +1,5 @@
 package com.ardetrick.oryhydrareference.login;
 
-import com.ardetrick.oryhydrareference.modelandview.ModelAndViewUtils;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -53,18 +52,9 @@ public class LoginController {
     public ModelAndView loginWithUsernamePasswordForm(
             LoginForm loginForm
     ) {
-        val redirectUrl = loginService.processSubmittedLoginRequest(loginForm.getLoginChallenge(), loginForm);
-        if (redirectUrl.redirectUrl() != null) {
-            return ModelAndViewUtils.redirectToDifferentContext(redirectUrl.redirectUrl());
-        }
+        val loginResult = loginService.processSubmittedLoginRequest(loginForm.loginChallenge(), loginForm);
 
-        val loginModelAndView = new ModelAndView();
-        loginModelAndView.setViewName("/login");
-        loginModelAndView.addObject("loginChallenge", loginForm.getLoginChallenge());
-        loginModelAndView.addObject("error", "invalid credentials try again");
-
-        return loginModelAndView;
+        return LoginModelAndViewMapper.toView(loginResult, loginForm);
     }
-    // TODO: add unit tests for form submission
 
 }

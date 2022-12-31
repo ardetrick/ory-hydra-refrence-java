@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -34,17 +36,26 @@ public class LoginService {
         hydraAdminClient.getLoginRequest(loginChallenge)
                 .orElseThrow(LoginRequestNotFoundException::new);
 
+        val maybeInvalidCredentialsResult = checkForInvalidCredentaialsResult(loginForm);
+        if (maybeInvalidCredentialsResult.isPresent()) {
+            return maybeInvalidCredentialsResult.get();
+        }
+
+        val completedRequest = hydraAdminClient.acceptLoginRequest(loginChallenge, loginForm.loginEmail());
+
+        return new LoginAcceptedFollowRedirect(completedRequest.getRedirectTo());
+    }
+
+    private static Optional<LoginDeniedInvalidCredentials> checkForInvalidCredentaialsResult(LoginForm loginForm) {
         // Naive authentication logic. In reality this should delegate to a real authentication system.
-        if (loginForm.getLoginEmail() == null || loginForm.getLoginPassword() == null) {
-            return LoginResult.invalidCredentials();
+        if (loginForm.loginEmail() == null || loginForm.loginPassword() == null) {
+            return Optional.of(new LoginDeniedInvalidCredentials());
         }
-        if (!"foo@bar.com".equals(loginForm.getLoginEmail()) || !"password".equals(loginForm.getLoginPassword())) {
-            return LoginResult.invalidCredentials();
+        if (!"foo@bar.com".equals(loginForm.loginEmail()) || !"password".equals(loginForm.loginPassword())) {
+            return Optional.of(new LoginDeniedInvalidCredentials());
         }
 
-        val completedRequest = hydraAdminClient.acceptLoginRequest(loginChallenge, loginForm.getLoginEmail());
-
-        return LoginResult.loginAcceptedFollowRedirect(completedRequest.getRedirectTo());
+        return Optional.empty();
     }
 
 }
