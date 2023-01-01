@@ -24,7 +24,7 @@ class LoginControllerTest {
         val loginChallenge = "example-login-challenge";
 
         when(loginService.processInitialLoginRequest(loginChallenge))
-                .thenReturn(InitialLoginResult.loginAcceptedFollowRedirect("redirect-location"));
+                .thenReturn(new LoginAcceptedFollowRedirect("redirect-location"));
 
         mockMvc.perform(get("/login"))
                 .andExpect(status().isBadRequest());
@@ -35,7 +35,7 @@ class LoginControllerTest {
         val loginChallenge = "example-login-challenge";
 
         when(loginService.processInitialLoginRequest(loginChallenge))
-                .thenReturn(InitialLoginResult.loginAcceptedFollowRedirect("redirect-location"));
+                .thenReturn(new LoginAcceptedFollowRedirect("redirect-location"));
 
         mockMvc.perform(get("/login").queryParam("login_challenge", loginChallenge))
                 .andExpect(status().isFound())
@@ -48,7 +48,7 @@ class LoginControllerTest {
         val loginChallenge = "example-login-challenge";
 
         when(loginService.processInitialLoginRequest(loginChallenge))
-                .thenReturn(InitialLoginResult.displayLoginUserInterface(loginChallenge));
+                .thenReturn(new LoginNotSkippableDisplayLoginUI(loginChallenge));
 
         mockMvc.perform(get("/login").queryParam("login_challenge", loginChallenge))
                 .andExpect(status().isOk())
@@ -57,7 +57,8 @@ class LoginControllerTest {
                         """)))
                 .andExpect(content().string(containsString("""
                         <input type="hidden" name="loginChallenge" value="example-login-challenge" />
-                        """)));
+                        """
+                )));
     }
 
 }

@@ -35,6 +35,7 @@ Whatever you choose, do not write the oauth endpoints yourself!
 
 - Java 17+
 - Docker (only required for running tests)
+- jq (used for some demos, not a hard dependency)
 
 ## Technologies Used
 
@@ -88,18 +89,19 @@ made so that the Ory Hydra containers are re-used across each test rather than r
 
 #### Playwright
 
+
+
 #### Test Containers
 
 ### Running With Local Ory Hydra
 
 Running the application and Ory Hydra locally is a useful way to manually interact with the application. Use the
-following commands to start Hydra, configure a client, and start the reference application. Note: this does require
-Docker and `jq`.
+following commands to start Hydra, start the reference application, create a client, exchange a token. 
 
+Note: All steps require Docker and some require `jq`. All commands should run relative to the root of this repo.
+
+#### Start Hydra And The Reference App
 ```
-# All commands should be run in the root of this project.
-# It is expected Docker is running and jq is installed.
-
 # Pull Hydra
 docker pull oryd/hydra:v2.0.2
 
@@ -107,11 +109,26 @@ docker pull oryd/hydra:v2.0.2
 # with an in memory database and run the migration sccripts. 
 docker-compose -f docker-compose.yml up --build
 
+# At this point Hydra urls such as http://localhost:4445/admin/clients should be up and running.
+
 # Open a new terminal...
 
 # Start the Spring app. 
 ./gradlew bootRun
 
+# At this point the reference app pages such as localhost:8080/index.html should load.
+```
+
+#### Demo App
+
+Once both the app and Hydra are started, visit http://localhost:8080/demo for instructions on how interactively demo
+the application. This is a more user-friendly approach than the subsequent testing instructions.
+
+#### Create A New Client And Test Via Terminal
+There may be existing clients you can use, visit to see http://localhost:4445/admin/clients.
+Otherwise, follow these instructions to create a client and test it by going through the oauth flow.
+
+```
 # Create a client. Uses the Hydra container to access the Hydra CLI.
 hydra_client=$(docker-compose -f docker-compose.yml exec hydra \
     hydra create client \
@@ -119,6 +136,7 @@ hydra_client=$(docker-compose -f docker-compose.yml exec hydra \
     --grant-type authorization_code,refresh_token \
     --response-type code,id_token \
     --format json \
+    --secret omit-for-random-secret-1 \
     --scope openid --scope offline \
     --redirect-uri http://127.0.0.1:5555/callback
 )
@@ -130,7 +148,7 @@ hydra_client_redirect_uri_0=$(echo $hydra_client | jq -r '.redirect_uris[0]')
 
 # Update the client to avoid some issues with the Java SDK.
 curl -X PATCH \
-  http://localhost:4445/admin/clients/${hydra_client_id} \
+  http://localhost:4445/admin/clients/$hydra_client_id \
   --data-binary @patch_client_body.json
 
 # Open a new terminal.
@@ -155,8 +173,11 @@ code=...
 # Exchange the authorization code for an access token
 curl -X POST \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -H "authorization: Basic $(echo -n "${hydra_client_id}:${hydra_client_secret}" | base64)" \
-  -d "grant_type=authorization_code&code=${code}&redirect_uri=http%3A%2F%2F127.0.0.1%3A5555%2Fcallback&client_id=${code_client_id}" \
+  -H "authorization: basic $(echo -n "${hydra_client_id}:${hydra_client_secret}" | base64)" \
+  -d "grant_type=authorization_code" \
+  -d "code=${code}" \
+  -d "redirect_uri=http%3A%2F%2F127.0.0.1%3A5555%2Fcallback" \
+  -d "client_id=${code_client_id}" \
   http://127.0.0.1:4444/oauth2/token
 ```
 
@@ -254,7 +275,7 @@ The above JWT was signed using a private key and can be verified with this JWKS 
 }
 ```
 
-The online tool, [jwt.io](jwt.io), is useful for verifying tokens during testing. For example, the above jwt is verified with the
+The online tool, [jwt.io](https://jwt.io), is useful for verifying tokens during testing. For example, the above jwt is verified with the
 above jwk [like this](https://jwt.io/#debugger-io?token=eyJhbGciOiJSUzI1NiIsImtpZCI6ImI2ZDMzYmYxLTU5ZDUtNGFiZi05NjQ2LWQxZjMyMTY3NWYyYiIsInR5cCI6IkpXVCJ9.eyJhdF9oYXNoIjoibWNIOEZpUzR6a3dJLTR0Wlpib3c4dyIsImF1ZCI6WyJhYzg0NGM0OC1iZjNkLTRlODEtODdhYS03YmNmNzRkYzA5MmMiXSwiYXV0aF90aW1lIjoxNjcxOTM5NzMyLCJleGFtcGxlQ3VzdG9tQ2xhaW1LZXkiOiJleGFtcGxlIGN1c3RvbSBjbGFpbSB2YWx1ZSIsImV4cCI6MTY3MTk0MzMzMywiaWF0IjoxNjcxOTM5NzMzLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjU5MDI5L2ludGVncmF0aW9uLXRlc3QtcHVibGljLXByb3h5IiwianRpIjoiNTdlNmE1YjctYmY2Yy00NGM0LWE4YjMtNWM0ZGI1NWRhNzJjIiwicmF0IjoxNjcxOTM5NzMxLCJzaWQiOiJiMWVmNDlhYy1mNDJiLTQ1N2UtYjNlMS0yOTVhOTFhYWVmYzkiLCJzdWIiOiJmb29AYmFyLmNvbSJ9.ZRCh1sjNBIe8N_XZm97JeOpJN-T4zB3M8-PH_B-9k3cNLK3u9Ku0nBXTxQ99idrlrxyWQPT7qQK5dAzBis3M2SJ36sWq5BMjGi7bq_nU_Cj_1hzo1HTcdHXkh9iMH4zyBeQPz8BTVGgVE3rSd3tsCOMiwub7Wp3sQKDSHkCkSs6zZcsCCJS9AVQym4ltJyayYJ2lXUg7XMzuFWeyAhuVrusY8wXDv4NRIZOM6ymtHOTxe9UUVKgO8sCnUAVLqz_w2aQIYRy-u-BpT09uEalqTo27rKrUZhHjOd3LgGGVVSGp5_RM_wpK4zkiA0G7CEpU39t0ib6Ix7VWxquGWKaLIA2YqKn3ZGkTdGlByPx5N8ubPtaOxzmlgafbNTjmXxBMXU03hUXCiSaZefBZFB9jiE92-6ZKKvAFqAoaMVWp6QF4wXx3LzQzBr_EBDdH0CwhUmt_rhThj0rp_VVgQ3yr0TV7UAQGaZEO-kMJblMUjhxhK7ZMBlFXC2g7pt9zuvXhdX32QOJQ-xc20vA_RX-Kkp-Nkv3JmNCSsf-jxfwECOr_mKN7_uj7MiPK6_6zUQyrfOMKRHZcJoTlSqZylCaRn1CDxnN-1aTQ_RTplC_E27KD2TYykqc-aUGr0vkRnOGfezP3vFGNvofTfCnzZcgNJs_yTSCim1nkD5CKZEjyIhQ&publicKey=%7B%0A%20%20%20%20%20%20%22use%22%3A%20%22sig%22%2C%0A%20%20%20%20%20%20%22kty%22%3A%20%22RSA%22%2C%0A%20%20%20%20%20%20%22kid%22%3A%20%22b6d33bf1-59d5-4abf-9646-d1f321675f2b%22%2C%0A%20%20%20%20%20%20%22alg%22%3A%20%22RS256%22%2C%0A%20%20%20%20%20%20%22n%22%3A%20%22yFM_NznB3GdBMNJI9YGBmzGRBx3qkTzBfReOOq2DXRBNCkoZZOMSlfv-qqruo-pfbaLwPoz2pww81h9R2hcpoZUbaLb5R3rHOmIYftjiorjzjiLnFlndY5rq3foLxZxcZ6dYBDyS3qzZgf8hUs3CH__kG4MNAAD1Hoj8pER-_jFsAyVLBXpNrIy2aiuUscnFuOtK06LbfX0OjasKSKnx_IGXMje_uA2xziA5AUy5sm4wHWhcFWNCHNH5IgP-AHmg19lm7Swd_OlFfhxg43A7AfypV4-OdBb4qhReEgNr6Fnl761gELYfgDxGZXh6o3vs-V6s4g3fMGNGk4JYHFkkCvlclAg9XaprWKFbnhA8-elqqKWNIShf32uTcajf9rMWh_4M-mLiOPDTaJsZg0_f1z-MyE2_MDe-aRURYVY7tlQYF5MnY-Hg5uxn1QEghezclPe5YWUOtI39u__DgA6X1bgQlE5n4SmvyBTuFScxTEqsidwSiIY5hJh0ek60ds16V3I-XafQ9I6JmQ1TRHxdJfpAxYH5CbroSn7lRA-Tlqd-iaJ3ZHTIBuPUa2kZGwSE8zkFPyd803FhqM-cJTtoDIS0piNd8tn6d_-KJ62jWxJeyCWiOqMvTLHdobz0p9u181l2DU7qR07J1g4qtG0pPQfs6931hLZrG6gXsd2CYfs%22%2C%0A%20%20%20%20%20%20%22e%22%3A%20%22AQAB%22%0A%20%20%20%20%7D).
 
 ## Example Flows

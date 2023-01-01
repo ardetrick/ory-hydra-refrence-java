@@ -1,6 +1,5 @@
 package com.ardetrick.oryhydrareference.login;
 
-import com.ardetrick.oryhydrareference.exception.LoginRequestNotFoundException;
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
 import lombok.AccessLevel;
 import lombok.NonNull;
@@ -20,23 +19,29 @@ public class LoginService {
 
     @NonNull HydraAdminClient hydraAdminClient;
 
-    public InitialLoginResult processInitialLoginRequest(@NonNull String loginChallenge) {
-        val loginRequest = hydraAdminClient.getLoginRequest(loginChallenge)
-                .orElseThrow(LoginRequestNotFoundException::new);
+    public LoginResult processInitialLoginRequest(@NonNull String loginChallenge) {
+        val maybeLoginRequest = hydraAdminClient.getLoginRequest(loginChallenge);
+        if (maybeLoginRequest.isEmpty()) {
+            return new LoginRequestNotFound();
+        }
+
+        val loginRequest = maybeLoginRequest.get();
 
         if (loginRequest.getSkip()) {
             hydraAdminClient.acceptLoginRequest(loginChallenge, loginRequest.getSubject());
-            return InitialLoginResult.loginAcceptedFollowRedirect(loginRequest.getRequestUrl());
+            return new LoginAcceptedFollowRedirect(loginRequest.getRequestUrl());
         }
 
-        return InitialLoginResult.displayLoginUserInterface(loginChallenge);
+        return new LoginNotSkippableDisplayLoginUI(loginChallenge);
     }
 
     public LoginResult processSubmittedLoginRequest(@NonNull String loginChallenge, LoginForm loginForm) {
-        hydraAdminClient.getLoginRequest(loginChallenge)
-                .orElseThrow(LoginRequestNotFoundException::new);
+        val maybeLoginRequest = hydraAdminClient.getLoginRequest(loginChallenge);
+        if (maybeLoginRequest.isEmpty()) {
+            return new LoginRequestNotFound();
+        }
 
-        val maybeInvalidCredentialsResult = checkForInvalidCredentaialsResult(loginForm);
+        val maybeInvalidCredentialsResult = checkForInvalidCredentialsResult(loginForm);
         if (maybeInvalidCredentialsResult.isPresent()) {
             return maybeInvalidCredentialsResult.get();
         }
@@ -46,7 +51,7 @@ public class LoginService {
         return new LoginAcceptedFollowRedirect(completedRequest.getRedirectTo());
     }
 
-    private static Optional<LoginDeniedInvalidCredentials> checkForInvalidCredentaialsResult(LoginForm loginForm) {
+    private static Optional<LoginDeniedInvalidCredentials> checkForInvalidCredentialsResult(LoginForm loginForm) {
         // Naive authentication logic. In reality this should delegate to a real authentication system.
         if (loginForm.loginEmail() == null || loginForm.loginPassword() == null) {
             return Optional.of(new LoginDeniedInvalidCredentials());

@@ -10,7 +10,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class LoginModelAndViewMapper {
 
     public static ModelAndView toView(@NonNull final LoginResult loginResult,
-                                      @NonNull final LoginForm loginForm) {
+                                      @NonNull final String loginChallenge) {
         if (loginResult instanceof LoginAcceptedFollowRedirect acceptedFollowRedirect) {
             return ModelAndViewUtils.redirectToDifferentContext(acceptedFollowRedirect.redirectUrl());
         }
@@ -18,10 +18,22 @@ public class LoginModelAndViewMapper {
         if (loginResult instanceof LoginDeniedInvalidCredentials) {
             val loginModelAndView = new ModelAndView();
             loginModelAndView.setViewName("/login");
-            loginModelAndView.addObject("loginChallenge", loginForm.loginChallenge());
+            loginModelAndView.addObject("loginChallenge", loginChallenge);
             loginModelAndView.addObject("error", "invalid credentials try again");
 
             return loginModelAndView;
+        }
+
+        if (loginResult instanceof LoginNotSkippableDisplayLoginUI) {
+            val loginModelAndView = new ModelAndView();
+            loginModelAndView.setViewName("/login");
+            loginModelAndView.addObject("loginChallenge", loginChallenge);
+
+            return loginModelAndView;
+        }
+
+        if (loginResult instanceof LoginRequestNotFound) {
+            return new ModelAndView("/home");
         }
 
         throw new IllegalStateException("Unknown response type: " + loginResult.getClass());

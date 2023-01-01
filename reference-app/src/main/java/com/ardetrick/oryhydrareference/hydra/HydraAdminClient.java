@@ -11,11 +11,9 @@ import org.springframework.stereotype.Service;
 import sh.ory.hydra.ApiException;
 import sh.ory.hydra.Configuration;
 import sh.ory.hydra.api.OAuth2Api;
-import sh.ory.hydra.model.AcceptOAuth2LoginRequest;
-import sh.ory.hydra.model.OAuth2ConsentRequest;
-import sh.ory.hydra.model.OAuth2LoginRequest;
-import sh.ory.hydra.model.OAuth2RedirectTo;
+import sh.ory.hydra.model.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -29,6 +27,14 @@ public class HydraAdminClient {
         val apiClient = Configuration.getDefaultApiClient()
                         .setBasePath(properties.getBasePath());
         oAuth2Api = new OAuth2Api(apiClient);
+    }
+
+    public List<OAuth2Client> listOAuth2Clients() {
+        try {
+            return oAuth2Api.listOAuth2Clients(1000L, null, null, null);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

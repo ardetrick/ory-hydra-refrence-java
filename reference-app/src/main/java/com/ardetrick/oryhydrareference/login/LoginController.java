@@ -30,9 +30,9 @@ public class LoginController {
      */
     @GetMapping
     public ModelAndView loginOptimistically(@RequestParam("login_challenge") String loginChallenge) {
-        val initialLoginResult = loginService.processInitialLoginRequest(loginChallenge);
+        val loginResult = loginService.processInitialLoginRequest(loginChallenge);
 
-        return initialLoginResult.toModelAndView();
+        return LoginModelAndViewMapper.toView(loginResult, loginChallenge);
     }
 
     /**
@@ -54,7 +54,7 @@ public class LoginController {
     ) {
         val loginResult = loginService.processSubmittedLoginRequest(loginForm.loginChallenge(), loginForm);
 
-        return LoginModelAndViewMapper.toView(loginResult, loginForm);
+        return LoginModelAndViewMapper.toView(loginResult, loginForm.loginChallenge());
     }
 
 }
