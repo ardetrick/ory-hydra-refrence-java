@@ -37,6 +37,7 @@ import sh.ory.hydra.api.OAuth2Api;
 import sh.ory.hydra.model.OAuth2Client;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -95,7 +96,12 @@ public class OryHydraReferenceApplicationFunctionalTests {
 		// An alternative approach would be to start the container once and re-use it across all tests.
 		// However, @BeforeAllTests requires the method be static but @LocalServerPort is unavailable statically.
 		// Creating the containers for each test increases test execution time but keeps all tests isolated.
-		dockerComposeEnvironment = OryHydraDockerComposeContainer.start(springBootAppPort);
+		dockerComposeEnvironment = OryHydraDockerComposeContainer.builder()
+				.dockerComposeFile(new File("src/test/resources/docker-compose.yml"))
+				.urlsLogin("http://localhost:" + springBootAppPort + "/login")
+				.urlsConsent("http://localhost:" + springBootAppPort + "/consent")
+				.urlsSelfIssuer("http://localhost:" + springBootAppPort + "/integration-test-public-proxy")
+				.start();
 
 		// A "cheat" to break a circular dependency where the reference application needs to know the URI of Ory Hydra
 		// and Ory Hydra needs to know the URI of the reference application. In a production application these two URIs

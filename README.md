@@ -107,7 +107,7 @@ docker pull oryd/hydra:v2.0.2
 
 # Use the same docker-compose file used by the functional tests to start Hydra 
 # with an in memory database and run the migration sccripts. 
-docker-compose -f docker-compose.yml up --build
+docker-compose -f ./reference-app/src/test/resources/docker-compose.yml up --build
 
 # At this point Hydra urls such as http://localhost:4445/admin/clients should be up and running.
 
@@ -130,7 +130,7 @@ Otherwise, follow these instructions to create a client and test it by going thr
 
 ```
 # Create a client. Uses the Hydra container to access the Hydra CLI.
-hydra_client=$(docker-compose -f docker-compose.yml exec hydra \
+hydra_client=$(docker-compose -f ./reference-app/src/test/resources/docker-compose.yml exec hydra \
     hydra create client \
     --endpoint http://127.0.0.1:4445 \
     --grant-type authorization_code,refresh_token \

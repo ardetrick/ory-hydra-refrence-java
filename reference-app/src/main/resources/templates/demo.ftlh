@@ -46,7 +46,7 @@ To create a client, run these commands. Afterwards, reload this page to see the 
 
 <pre>
 <code>
-hydra_client=$(docker-compose -f docker-compose.yml exec hydra \
+hydra_client=$(docker-compose -f ./reference-app/src/test/resources/docker-compose.yml exec hydra \
     hydra create client \
     --endpoint http://127.0.0.1:4445 \
     --grant-type authorization_code,refresh_token \
