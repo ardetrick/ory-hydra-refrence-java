@@ -1,17 +1,9 @@
 plugins {
-    id 'io.spring.dependency-management' version '1.0.14.RELEASE'
-    id "io.freefair.lombok" version "6.5.1"
-}
-
-ext {
-    set('testcontainersVersion', "1.17.4")
-}
-dependencyManagement {
-    imports {
-        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
-    }
+    id 'java-library'
 }
 
 dependencies {
-    implementation("org.testcontainers:testcontainers:1.17.4")
+    api platform("org.testcontainers:testcontainers-bom:1.17.6")
+    api "org.testcontainers:testcontainers"
+    api 'org.testcontainers:junit-jupiter'
 }

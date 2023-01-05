@@ -14,10 +14,9 @@ public class OryHydraReferenceApplication {
 	}
 
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		// Applies a default CSRF configuration.
-		// https://docs.spring.io/spring-security/reference/features/exploits/csrf.html
-		// https://docs.spring.io/spring-security/site/docs/5.0.x/reference/html/csrf.html
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		// TODO: revisit and understand why SpringBoot 3 broke the old CSRF code
+		http.csrf().disable();
 		return http.build();
 	}
 

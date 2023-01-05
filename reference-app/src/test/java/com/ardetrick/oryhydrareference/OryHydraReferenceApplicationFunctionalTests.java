@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URIBuilder;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Playwright;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.*;
@@ -36,7 +37,6 @@ import sh.ory.hydra.Configuration;
 import sh.ory.hydra.api.OAuth2Api;
 import sh.ory.hydra.model.OAuth2Client;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
