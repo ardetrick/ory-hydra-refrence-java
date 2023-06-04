@@ -135,17 +135,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
 		// Documentation states these are optional but an error is thrown when not provided.
 		// https://github.com/ory/hydra/issues/3360#issuecomment-1362244324
-		oAuth2Client.authorizationCodeGrantAccessTokenLifespan("1h");
-		oAuth2Client.authorizationCodeGrantRefreshTokenLifespan("1h");
-		oAuth2Client.authorizationCodeGrantIdTokenLifespan("1h");
-		oAuth2Client.clientCredentialsGrantAccessTokenLifespan("1h");
-		oAuth2Client.contacts(ImmutableList.of());
-		oAuth2Client.implicitGrantAccessTokenLifespan("1h");
-		oAuth2Client.implicitGrantIdTokenLifespan("1h");
-		oAuth2Client.jwtBearerGrantAccessTokenLifespan("1h");
-		oAuth2Client.refreshTokenGrantAccessTokenLifespan("1h");
-		oAuth2Client.refreshTokenGrantRefreshTokenLifespan("1h");
-		oAuth2Client.refreshTokenGrantIdTokenLifespan("1h");
+		// The linked PR was supposed to fix this issue, but it appears as if a new issue should be opened.
+		// StringSliceJSONFormat does not allow for nulls, perhaps there should be a NullStringSliceJSONFormat.
+		oAuth2Client.contacts(List.of());
 
 		// Initialize API
 		val oauth2Api = new OAuth2Api(
