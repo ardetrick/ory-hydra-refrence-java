@@ -6,6 +6,7 @@
 <body>
 <h2>Log In</h2>
 <form action="/login/usernamePassword" method="post">
+  <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
   <input type="hidden" name="loginChallenge" value="${loginChallenge}" />
 
   <label for="loginEmail">Email:</label>

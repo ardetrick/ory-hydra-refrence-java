@@ -5,6 +5,7 @@
 </head>
 <body>
 <form action="/consent" method="post">
+  <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
   <input type="hidden" name="consentChallenge" value="${consentChallenge}" />
 
   <!-- for each scope being requested... -->

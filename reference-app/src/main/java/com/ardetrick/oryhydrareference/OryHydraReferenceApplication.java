@@ -4,8 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @SpringBootApplication
 public class OryHydraReferenceApplication {
@@ -14,10 +14,12 @@ public class OryHydraReferenceApplication {
 		SpringApplication.run(OryHydraReferenceApplication.class, args);
 	}
 
+
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		// TODO: revisit and understand why SpringBoot 3 broke the old CSRF code
-		http.csrf(AbstractHttpConfigurer::disable);
+		// Don't use this configuration in production. Cookies should be set with http only, but is beyond
+		// the scope of reference implementation at the moment.
+		http.csrf((csrf) -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
 		return http.build();
 	}
 
