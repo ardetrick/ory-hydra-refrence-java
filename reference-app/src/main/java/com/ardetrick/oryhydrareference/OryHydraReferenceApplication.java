@@ -18,7 +18,8 @@ public class OryHydraReferenceApplication {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		// Don't use this configuration in production. Cookies should be set with http only, but is beyond
-		// the scope of reference implementation at the moment.
+		// the scope of reference implementation at the moment. Alternatively, this could be moved to the integration
+		// test config or under a dev only toggle.
 		http.csrf((csrf) -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
 		return http.build();
 	}

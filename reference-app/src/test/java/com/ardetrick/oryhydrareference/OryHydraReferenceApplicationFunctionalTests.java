@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.view.RedirectView;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 import sh.ory.hydra.ApiException;
 import sh.ory.hydra.Configuration;
 import sh.ory.hydra.api.OAuth2Api;
@@ -58,7 +57,7 @@ import static org.mockito.Mockito.verify;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import({
 		ClientCallBackController.class,
-		ForwardingController.class
+		ForwardingController.class,
 })
 @Testcontainers
 @TestPropertySource(properties = {"debug=true"})
