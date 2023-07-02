@@ -17,10 +17,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
 // A way to run Playwright CLI commands using the Java source dependency.
 // Particularly useful from within a CI context (see ./.github/workflows.gradle.yml).
 // https://playwright.dev/docs/cli#install-system-dependencies
