@@ -33,9 +33,10 @@ Whatever you choose, do not write the oauth endpoints yourself!
 
 ## Prerequisites: What do you need to get started?
 
-- Java 17+
 - Docker (only required for running tests)
 - jq (used for some demos, not a hard dependency)
+
+No Java installation required. The gradle tool chain has been configured to automatically download a jdk.
 
 ## Technologies Used
 
