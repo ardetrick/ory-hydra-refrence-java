@@ -25,12 +25,14 @@ tasks.withType<Test> {
 // Particularly useful from within a CI context (see ./.github/workflows.gradle.yml).
 // https://playwright.dev/docs/cli#install-system-dependencies
 // https://github.com/microsoft/playwright-java/issues/571
-// ./gradlew playwright --args="install-deps"
+// ./gradlew playwright -Pargs="install-deps"
 tasks.register<JavaExec>("playwright") {
     classpath(sourceSets["test"].runtimeClasspath)
     mainClass.set("com.microsoft.playwright.CLI")
-    if (project.hasProperty("args")) {
-        @Suppress("UNCHECKED_CAST")
-        args = project.property("args") as MutableList<String>?
+    val playwrightArgs = "args"
+    if (project.hasProperty(playwrightArgs)) {
+        args = project.findProperty(playwrightArgs)
+            .toString()
+            .split(" ")
     }
 }
