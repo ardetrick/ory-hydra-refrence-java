@@ -14,7 +14,6 @@ public class OryHydraReferenceApplication {
 		SpringApplication.run(OryHydraReferenceApplication.class, args);
 	}
 
-
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		// Don't use this configuration in production. Cookies should be set with http only, but is beyond
