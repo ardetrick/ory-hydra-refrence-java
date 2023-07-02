@@ -14,7 +14,3 @@ java {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
 }
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
