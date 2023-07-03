@@ -1,5 +1,5 @@
 plugins {
-    java
+    id("java")
     id("io.freefair.lombok")
     id("io.spring.dependency-management")
 }
