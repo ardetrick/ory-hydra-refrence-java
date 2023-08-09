@@ -33,7 +33,7 @@ jobs:
           # Some dependencies are downloaded to this directory
           path: /home/runner/.cache/ms-playwright
           # There probably is a smarter way to create this key but this should be ok for now.
-          key: ms-playwright-cache-${{ runner.os }}-${{ hashFiles('**/build.gradle') }}
+          key: ms-playwright-cache-${{ runner.os }}-${{ hashFiles('**/build.gradle.kts') }}
       - name: Install Playwright Dependencies
         run: ./gradlew playwright -Pargs="install-deps" --no-daemon
       - name: build
