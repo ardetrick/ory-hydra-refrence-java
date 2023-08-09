@@ -28,6 +28,7 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
       - name: Setup ms-playwright cache
+        id: setup-ms-playwright-cache
         uses: actions/cache@v3
         with:
           # Some dependencies are downloaded to this directory
@@ -35,6 +36,9 @@ jobs:
           # There probably is a smarter way to create this key but this should be ok for now.
           key: ms-playwright-cache-${{ runner.os }}-${{ hashFiles('**/build.gradle.kts') }}
       - name: Install Playwright Dependencies
+        if: steps.setup-ms-playwright-cache.outputs.cache-hit != 'true'
         run: ./gradlew playwright -Pargs="install-deps" --no-daemon
       - name: build
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         run: ./gradlew build --no-daemon
