@@ -27,7 +27,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            /home/runner/.cache/ms-playwright
       - name: Install Playwright Dependencies
-        run: ./gradlew playwright -Pargs="install-deps"
+        run: ./gradlew playwright -Pargs="install-deps" --no-daemon
       - name: build
-        run: ./gradlew build
+        run: ./gradlew build --no-daemon
