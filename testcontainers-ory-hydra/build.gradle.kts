@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    api(platform("org.testcontainers:testcontainers-bom:1.17.6"))
+    api(platform("org.testcontainers:testcontainers-bom:1.18.3"))
     api("org.testcontainers:testcontainers")
     api("org.testcontainers:junit-jupiter")
 }
