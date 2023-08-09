@@ -28,6 +28,6 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
       - name: Install Playwright Dependencies
-        run: ./gradlew playwright -Pargs="install-deps"
+        run: ./gradlew playwright -Pargs="install-deps" --no-daemon
       - name: build
-        run: ./gradlew build
+        run: ./gradlew build --no-daemon
