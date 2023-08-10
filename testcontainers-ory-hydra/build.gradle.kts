@@ -8,5 +8,3 @@ dependencies {
     api("org.testcontainers:testcontainers")
     api("org.testcontainers:junit-jupiter")
 }
-
-

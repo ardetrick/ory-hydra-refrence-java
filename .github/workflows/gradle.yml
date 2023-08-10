@@ -37,8 +37,11 @@ jobs:
           key: ms-playwright-cache-${{ runner.os }}-${{ hashFiles('**/build.gradle.kts') }}
       - name: Install Playwright Dependencies
         if: steps.setup-ms-playwright-cache.outputs.cache-hit != 'true'
-        run: ./gradlew playwright -Pargs="install-deps" --no-daemon
+        run: |
+          ./gradlew playwright --args="install-deps" --no-daemon
+          ./gradlew playwright --args="install" --no-daemon
       - name: build
         env:
+          # Browsers will have been installed earlier
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         run: ./gradlew build --no-daemon
