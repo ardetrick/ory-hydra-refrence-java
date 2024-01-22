@@ -29,7 +29,7 @@ jobs:
           cache: 'gradle'
       - name: Setup ms-playwright cache
         id: setup-ms-playwright-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           # Some dependencies are downloaded to this directory
           path: /home/runner/.cache/ms-playwright
