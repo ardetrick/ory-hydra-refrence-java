@@ -9,7 +9,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.session:spring-session-core")
-    implementation("sh.ory.hydra:hydra-client:2.1.1")
+    implementation("sh.ory.hydra:hydra-client:2.2.0")
 
     testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.1")
     testImplementation("com.auth0:java-jwt:4.4.0")
