@@ -1,5 +1,5 @@
 plugins {
-    id("org.springframework.boot") version "3.3.0"
+    id("org.springframework.boot") version "3.3.1"
     id("project.java-conventions")
 }
 
