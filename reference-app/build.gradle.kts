@@ -13,7 +13,7 @@ dependencies {
 
     testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.1")
     testImplementation("com.auth0:java-jwt:4.4.0")
-    testImplementation("com.microsoft.playwright:playwright:1.47.0")
+    testImplementation("com.microsoft.playwright:playwright:1.48.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
