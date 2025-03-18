@@ -9,9 +9,9 @@ repositories {
 dependencies {
     implementation("io.freefair.gradle:lombok-plugin:8.13")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.7")
-    implementation("org.gradle.toolchains:foojay-resolver:0.8.0")
+    implementation("org.gradle.toolchains:foojay-resolver:0.9.0")
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
