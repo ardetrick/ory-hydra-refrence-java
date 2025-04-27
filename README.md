@@ -36,7 +36,7 @@ Whatever you choose, do not write the oauth endpoints yourself!
 
 ## Prerequisites: What do you need to get started?
 
-- Java 17+
+- Java 21
     - required by the SpringBoot plugin at build time
     - Gradle tool chain is used to compile and run tests
 - Docker (only required for running tests)
@@ -44,7 +44,7 @@ Whatever you choose, do not write the oauth endpoints yourself!
 
 ## Technologies Used
 
-- Java 17+
+- Java 21
 - SpringBoot
 - Gradle
 - Test Containers
