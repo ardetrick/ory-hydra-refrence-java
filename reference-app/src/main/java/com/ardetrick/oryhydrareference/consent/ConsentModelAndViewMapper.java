@@ -1,5 +1,8 @@
 package com.ardetrick.oryhydrareference.consent;
 
+import com.ardetrick.oryhydrareference.consent.ConsentResponse.Accepted;
+import com.ardetrick.oryhydrareference.consent.ConsentResponse.DisplayUI;
+import com.ardetrick.oryhydrareference.consent.ConsentResponse.Skip;
 import com.ardetrick.oryhydrareference.modelandview.ModelAndViewUtils;
 import lombok.NonNull;
 import org.springframework.web.servlet.ModelAndView;
@@ -7,19 +10,25 @@ import org.springframework.web.servlet.ModelAndView;
 public class ConsentModelAndViewMapper {
 
     public static ModelAndView map(@NonNull final ConsentResponse response) {
-        if (response instanceof ConsentResponseSkip accepted) {
-            return ModelAndViewUtils.redirectToDifferentContext(accepted.redirectTo());
-        }
-        if (response instanceof ConsentResponseRequiresUIDisplay uiRedirect) {
-            return new ModelAndView("consent")
-                    .addObject("consentChallenge", uiRedirect.consentChallenge())
-                    .addObject("scopes", uiRedirect.requestedScopes());
-        }
-        if (response instanceof ConsentResponseAccepted accepted) {
-            return ModelAndViewUtils.redirectToDifferentContext(accepted.redirectTo());
-        }
+        return switch (response) {
+            case Skip r -> handleSkip(r);
+            case DisplayUI r -> handleDisplayUI(r);
+            case Accepted r -> handleAccepted(r);
+        };
+    }
 
-        throw new IllegalStateException("Unknown response type: " + response.getClass());
+    private static ModelAndView handleSkip(Skip consentResponseSkip) {
+        return ModelAndViewUtils.redirectToDifferentContext(consentResponseSkip.redirectTo());
+    }
+
+    private static ModelAndView handleDisplayUI(DisplayUI displayUI) {
+        return new ModelAndView("consent")
+                .addObject("consentChallenge", displayUI.consentChallenge())
+                .addObject("scopes", displayUI.requestedScopes());
+    }
+
+    private static ModelAndView handleAccepted(Accepted accepted) {
+        return ModelAndViewUtils.redirectToDifferentContext(accepted.redirectTo());
     }
 
 }

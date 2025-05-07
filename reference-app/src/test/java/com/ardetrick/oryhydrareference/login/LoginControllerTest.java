@@ -1,10 +1,12 @@
 package com.ardetrick.oryhydrareference.login;
 
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginAcceptedFollowRedirect;
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginNotSkippableDisplayLoginUI;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
@@ -15,9 +17,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(LoginController.class)
 class LoginControllerTest {
 
-    @Autowired MockMvc mockMvc;
+    @Autowired
+    MockMvc mockMvc;
 
-    @MockBean LoginService loginService;
+    @MockitoBean
+    LoginService loginService;
 
     @Test
     public void loginOptimistically_whenMissingLoginChallengeQueryParam_shouldReturn400() throws Exception {

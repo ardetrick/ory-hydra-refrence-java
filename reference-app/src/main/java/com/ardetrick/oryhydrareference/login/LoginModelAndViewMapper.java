@@ -1,5 +1,8 @@
 package com.ardetrick.oryhydrareference.login;
 
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginAcceptedFollowRedirect;
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginNotSkippableDisplayLoginUI;
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginRequestNotFound;
 import com.ardetrick.oryhydrareference.modelandview.ModelAndViewUtils;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -11,32 +14,26 @@ public class LoginModelAndViewMapper {
 
     public static ModelAndView toView(@NonNull final LoginResult loginResult,
                                       @NonNull final String loginChallenge) {
-        if (loginResult instanceof LoginAcceptedFollowRedirect acceptedFollowRedirect) {
-            return ModelAndViewUtils.redirectToDifferentContext(acceptedFollowRedirect.redirectUrl());
-        }
+        return switch (loginResult) {
+            case LoginAcceptedFollowRedirect(String redirectUrl) ->
+                    ModelAndViewUtils.redirectToDifferentContext(redirectUrl);
+            case LoginResult.LoginDeniedInvalidCredentials ignored -> {
+                val loginModelAndView = new ModelAndView();
+                loginModelAndView.setViewName("/login");
+                loginModelAndView.addObject("loginChallenge", loginChallenge);
+                loginModelAndView.addObject("error", "invalid credentials try again");
 
-        if (loginResult instanceof LoginDeniedInvalidCredentials) {
-            val loginModelAndView = new ModelAndView();
-            loginModelAndView.setViewName("/login");
-            loginModelAndView.addObject("loginChallenge", loginChallenge);
-            loginModelAndView.addObject("error", "invalid credentials try again");
+                yield loginModelAndView;
+            }
+            case LoginNotSkippableDisplayLoginUI ignored -> {
+                val loginModelAndView = new ModelAndView();
+                loginModelAndView.setViewName("/login");
+                loginModelAndView.addObject("loginChallenge", loginChallenge);
 
-            return loginModelAndView;
-        }
-
-        if (loginResult instanceof LoginNotSkippableDisplayLoginUI) {
-            val loginModelAndView = new ModelAndView();
-            loginModelAndView.setViewName("/login");
-            loginModelAndView.addObject("loginChallenge", loginChallenge);
-
-            return loginModelAndView;
-        }
-
-        if (loginResult instanceof LoginRequestNotFound) {
-            return new ModelAndView("/home");
-        }
-
-        throw new IllegalStateException("Unknown response type: " + loginResult.getClass());
+                yield loginModelAndView;
+            }
+            case LoginRequestNotFound ignored -> new ModelAndView("/home");
+        };
     }
 
 }

@@ -1,5 +1,8 @@
 package com.ardetrick.oryhydrareference.consent;
 
+import com.ardetrick.oryhydrareference.consent.ConsentResponse.Accepted;
+import com.ardetrick.oryhydrareference.consent.ConsentResponse.DisplayUI;
+import com.ardetrick.oryhydrareference.consent.ConsentResponse.Skip;
 import com.ardetrick.oryhydrareference.hydra.AcceptConsentRequest;
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
 import lombok.AccessLevel;
@@ -27,10 +30,10 @@ public class ConsentService {
                     .scopes(consentRequest.getRequestedScope())
                     .build();
             val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
-            return new ConsentResponseSkip(acceptConsentResponse.getRedirectTo());
+            return new Skip(acceptConsentResponse.getRedirectTo());
         }
 
-        return new ConsentResponseRequiresUIDisplay(consentRequest.getRequestedScope(), consentChallenge);
+        return new DisplayUI(consentRequest.getRequestedScope(), consentChallenge);
     }
 
     public ConsentResponse processConsentForm(@NonNull final ConsentForm consentForm) {
@@ -47,7 +50,7 @@ public class ConsentService {
 
         val oauth2RedirectTo = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
 
-        return new ConsentResponseAccepted(oauth2RedirectTo.getRedirectTo());
+        return new Accepted(oauth2RedirectTo.getRedirectTo());
     }
 
 }
