@@ -1,6 +1,10 @@
 package com.ardetrick.oryhydrareference.login;
 
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginAcceptedFollowRedirect;
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginDeniedInvalidCredentials;
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginNotSkippableDisplayLoginUI;
+import com.ardetrick.oryhydrareference.login.LoginResult.LoginRequestNotFound;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +21,8 @@ import java.util.Optional;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class LoginService {
 
-    @NonNull HydraAdminClient hydraAdminClient;
+    @NonNull
+    HydraAdminClient hydraAdminClient;
 
     public LoginResult processInitialLoginRequest(@NonNull String loginChallenge) {
         val maybeLoginRequest = hydraAdminClient.getLoginRequest(loginChallenge);

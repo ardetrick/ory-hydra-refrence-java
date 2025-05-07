@@ -21,11 +21,11 @@ import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestComponent;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Controller;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -77,7 +77,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @Autowired
     HydraAdminClient.Properties properties;
 
-    @MockBean
+    @MockitoBean
     Consumer<String> queryStringConsumer;
     @Captor
     ArgumentCaptor<String> queryStringConsumerArgumentCaptor;
@@ -136,12 +136,6 @@ public class OryHydraReferenceApplicationFunctionalTests {
         oAuth2Client.clientSecret("client-secret");
         oAuth2Client.scope(String.join(" ", "offline_access", "openid", "offline", "profile"));
 
-        // Documentation states these are optional but an error is thrown when not provided.
-        // https://github.com/ory/hydra/issues/3360#issuecomment-1362244324
-        // The linked PR was supposed to fix this issue, but it appears as if a new issue should be opened.
-        // StringSliceJSONFormat does not allow for nulls, perhaps there should be a NullStringSliceJSONFormat.
-        oAuth2Client.contacts(List.of());
-
         // Initialize API
         val oauth2Api = new OAuth2Api(
                 Configuration.getDefaultApiClient().setBasePath(dockerComposeEnvironment.adminBaseUriString())
@@ -186,8 +180,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(initiateFlowUri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.type("input[name=loginEmail]", "foo@bar.com");
-        page.type("input[name=loginPassword]", "password1");
+        page.locator("input[name=loginEmail]").fill("foo@bar.com");
+        page.locator("input[name=loginPassword]").fill("password1");
 
         page.locator("input[name=submit]").click();
 
@@ -224,8 +218,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.type("input[name=loginEmail]", "foo@bar.com");
-        page.type("input[name=loginPassword]", "password");
+        page.locator("input[name=loginEmail]").fill("foo@bar.com");
+        page.locator("input[name=loginPassword]").fill("password");
 
         page.locator("input[name=submit]").click();
 
@@ -268,8 +262,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.type("input[name=loginEmail]", "foo@bar.com");
-        page.type("input[name=loginPassword]", "password");
+        page.locator("input[name=loginEmail]").fill("foo@bar.com");
+        page.locator("input[name=loginPassword]").fill("password");
 
         page.locator("input[name=submit]").click();
 
@@ -349,8 +343,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.type("input[name=loginEmail]", "foo@bar.com");
-        page.type("input[name=loginPassword]", "password");
+        page.locator("input[name=loginEmail]").fill("foo@bar.com");
+        page.locator("input[name=loginPassword]").fill("password");
 
         page.locator("input[name=submit]").click();
 
@@ -370,8 +364,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(getUriToInitiateFlow().toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
 
-        page.type("input[name=loginEmail]", "foo@bar.com");
-        page.type("input[name=loginPassword]", "password");
+        page.locator("input[name=loginEmail]").fill("foo@bar.com");
+        page.locator("input[name=loginPassword]").fill("password");
 
         page.locator("input[name=submit]").click();
 
@@ -407,8 +401,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.type("input[name=loginEmail]", "foo@bar.com");
-        page.type("input[name=loginPassword]", "password");
+        page.locator("input[name=loginEmail]").fill("foo@bar.com");
+        page.locator("input[name=loginPassword]").fill("password");
 
         page.locator("input[name=submit]").click();
 
@@ -431,8 +425,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(getUriToInitiateFlow().toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
 
-        page.type("input[name=loginEmail]", "foo@bar.com");
-        page.type("input[name=loginPassword]", "password");
+        page.locator("input[name=loginEmail]").fill("foo@bar.com");
+        page.locator("input[name=loginPassword]").fill("password");
 
         page.locator("input[name=submit]").click();
 
@@ -454,7 +448,8 @@ record CodeExchangeResponse(
         @JsonProperty("refresh_token") String refreshToken,
         @JsonProperty("scope") String scope,
         @JsonProperty("token_type") String tokenType
-) {}
+) {
+}
 
 /**
  * A controller that exposes an endpoint which acts as a proxy to the oauth server. This proxy is used to break the
@@ -479,7 +474,6 @@ class ForwardingController {
 
     @GetMapping("oauth2/fallbacks/error")
     public String oauth2FallbacksError(HttpServletRequest request) {
-        System.out.println(request.getRequestURI());
         return null;
     }
 
