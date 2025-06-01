@@ -1,5 +1,5 @@
 plugins {
-    id("org.springframework.boot") version "3.4.5"
+    id("org.springframework.boot") version "3.5.0"
     id("project.java-conventions")
 }
 
@@ -11,9 +11,9 @@ dependencies {
     implementation("org.springframework.session:spring-session-core")
     implementation("sh.ory.hydra:hydra-client:2.2.1")
 
-    testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.1")
+    testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.2")
     testImplementation("com.auth0:java-jwt:4.5.0")
-    testImplementation("com.microsoft.playwright:playwright:1.51.0")
+    testImplementation("com.microsoft.playwright:playwright:1.52.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
