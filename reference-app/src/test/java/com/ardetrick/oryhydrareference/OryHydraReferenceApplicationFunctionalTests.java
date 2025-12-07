@@ -2,7 +2,7 @@ package com.ardetrick.oryhydrareference;
 
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
 import com.ardetrick.oryhydrareference.test.utils.ScreenshotPathProducer;
-import com.ardetrick.testcontainers.OryHydraDockerComposeContainer;
+import com.ardetrick.testcontainers.OryHydraComposeContainer;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,6 +45,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -70,7 +72,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @LocalServerPort
     int springBootAppPort;
 
-    OryHydraDockerComposeContainer<?> dockerComposeEnvironment;
+    OryHydraComposeContainer dockerComposeEnvironment;
 
     OAuth2Client oAuth2Client;
 
@@ -80,12 +82,13 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @MockitoBean
     Consumer<String> queryStringConsumer;
     @Captor
-    ArgumentCaptor<String> queryStringConsumerArgumentCaptor;
+    ArgumentCaptor<String> queryStringConsumerArgumentCaptor = ArgumentCaptor.forClass(String.class);
 
     @BeforeAll
     static void beforeAll() {
         playwright = Playwright.create();
-        browser = playwright.chromium().launch();
+        browser = playwright.chromium()
+                            .launch();
     }
 
     @AfterAll
@@ -99,12 +102,12 @@ public class OryHydraReferenceApplicationFunctionalTests {
         // An alternative approach would be to start the container once and re-use it across all tests.
         // However, @BeforeAllTests requires the method be static but @LocalServerPort is unavailable statically.
         // Creating the containers for each test increases test execution time but keeps all tests isolated.
-        dockerComposeEnvironment = OryHydraDockerComposeContainer.builder()
-                .dockerComposeFile(new File("src/test/resources/docker-compose.yml"))
-                .urlsLogin("http://localhost:" + springBootAppPort + "/login")
-                .urlsConsent("http://localhost:" + springBootAppPort + "/consent")
-                .urlsSelfIssuer("http://localhost:" + springBootAppPort + "/integration-test-public-proxy")
-                .start();
+        dockerComposeEnvironment = OryHydraComposeContainer.builder()
+                                                           .dockerComposeFile(new File("src/test/resources/docker-compose.yml"))
+                                                           .urlsLogin("http://localhost:" + springBootAppPort + "/login")
+                                                           .urlsConsent("http://localhost:" + springBootAppPort + "/consent")
+                                                           .urlsSelfIssuer("http://localhost:" + springBootAppPort + "/integration-test-public-proxy")
+                                                           .start();
 
         // A "cheat" to break a circular dependency where the reference application needs to know the URI of Ory Hydra
         // and Ory Hydra needs to know the URI of the reference application. In a production application these two URIs
@@ -114,6 +117,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
         // already using that port). There may be a cleaner approach out there (perhaps using Docker Networking?) but
         // in the meantime this is a low cost and sufficient work around.
         properties.setBasePath(dockerComposeEnvironment.publicBaseUriString());
+
+        // Temporary workaround: poll Hydra admin until /health/ready returns 200.
+        waitForHydraReadiness();
 
         oAuth2Client = createOAuthClient();
     }
@@ -138,7 +144,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
         // Initialize API
         val oauth2Api = new OAuth2Api(
-                Configuration.getDefaultApiClient().setBasePath(dockerComposeEnvironment.adminBaseUriString())
+                Configuration.getDefaultApiClient()
+                             .setBasePath(dockerComposeEnvironment.adminBaseUriString())
         );
 
         // Create client
@@ -158,11 +165,13 @@ public class OryHydraReferenceApplicationFunctionalTests {
      */
     @Test
     void requestToJwksUriReturns200() throws IOException, InterruptedException {
-        val request = HttpRequest.newBuilder(dockerComposeEnvironment.getPublicJwksUri()).build();
-        val response = HttpClient.newHttpClient().send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-        );
+        val request = HttpRequest.newBuilder(dockerComposeEnvironment.getPublicJwksUri())
+                                 .build();
+        val response = HttpClient.newHttpClient()
+                                 .send(
+                                         request,
+                                         HttpResponse.BodyHandlers.ofString()
+                                 );
 
         assertThat(response.statusCode())
                 .isEqualTo(200);
@@ -171,8 +180,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @Test
     public void loginInvalidCredentials() {
         val screenshotPathProducer = ScreenshotPathProducer.builder()
-                .testName("loginInvalidCredentials")
-                .build();
+                                                           .testName("loginInvalidCredentials")
+                                                           .build();
 
         val page = browser.newPage();
         val initiateFlowUri = getUriToInitiateFlow();
@@ -180,10 +189,13 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(initiateFlowUri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.locator("input[name=loginEmail]").fill("foo@bar.com");
-        page.locator("input[name=loginPassword]").fill("password1");
+        page.locator("input[name=loginEmail]")
+            .fill("foo@bar.com");
+        page.locator("input[name=loginPassword]")
+            .fill("password1");
 
-        page.locator("input[name=submit]").click();
+        page.locator("input[name=submit]")
+            .click();
 
         page.waitForLoadState();
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
@@ -196,7 +208,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
             return new URIBuilder(dockerComposeEnvironment.getOAuth2AuthUri())
                     .addParameter("response_type", "code")
                     .addParameter("client_id", oAuth2Client.getClientId())
-                    .addParameter("redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
+                    .addParameter("redirect_uri",
+                                  Objects.requireNonNull(oAuth2Client.getRedirectUris())
+                                         .get(0))
                     .addParameter("scope", "offline_access openid offline profile")
                     .addParameter("state", "12345678901234567890")
                     .build();
@@ -208,8 +222,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @Test
     public void completeFullOAuthFlowUsingUIToLogin() {
         val screenshotPathProducer = ScreenshotPathProducer.builder()
-                .testName("completeFullOAuthFlowUsingUIToLogin")
-                .build();
+                                                           .testName("completeFullOAuthFlowUsingUIToLogin")
+                                                           .build();
 
         val page = browser.newPage();
 
@@ -218,16 +232,20 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.locator("input[name=loginEmail]").fill("foo@bar.com");
-        page.locator("input[name=loginPassword]").fill("password");
+        page.locator("input[name=loginEmail]")
+            .fill("foo@bar.com");
+        page.locator("input[name=loginPassword]")
+            .fill("password");
 
-        page.locator("input[name=submit]").click();
+        page.locator("input[name=submit]")
+            .click();
 
         page.waitForLoadState();
 
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
-        page.locator("input[id=accept]").click();
+        page.locator("input[id=accept]")
+            .click();
 
         page.waitForLoadState();
 
@@ -244,7 +262,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
                 .isNotBlank();
 
         val decodedJWT = JWT.decode(token.idToken());
-        assertThat(decodedJWT.getClaim("exampleCustomClaimKey").asString())
+        assertThat(decodedJWT.getClaim("exampleCustomClaimKey")
+                             .asString())
                 .isNotNull()
                 .isEqualTo("example custom claim value");
     }
@@ -252,8 +271,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @Test
     public void completeFlowWithPartialScopeSelection() {
         val screenshotPathProducer = ScreenshotPathProducer.builder()
-                .testName("completeFlowWithPartialScopeSelection")
-                .build();
+                                                           .testName("completeFlowWithPartialScopeSelection")
+                                                           .build();
 
         val page = browser.newPage();
 
@@ -262,20 +281,25 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.locator("input[name=loginEmail]").fill("foo@bar.com");
-        page.locator("input[name=loginPassword]").fill("password");
+        page.locator("input[name=loginEmail]")
+            .fill("foo@bar.com");
+        page.locator("input[name=loginPassword]")
+            .fill("password");
 
-        page.locator("input[name=submit]").click();
+        page.locator("input[name=submit]")
+            .click();
 
         page.waitForLoadState();
 
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
-        page.locator("input[id=scopes-profile]").uncheck();
+        page.locator("input[id=scopes-profile]")
+            .uncheck();
 
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-uncheck-scope"));
 
-        page.locator("input[id=accept]").click();
+        page.locator("input[id=accept]")
+            .click();
 
         page.waitForLoadState();
 
@@ -295,29 +319,39 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
     private CodeExchangeResponse exchangeCode(String code) {
         val encodedParams = Map.of(
-                        "client_id", Objects.requireNonNull(oAuth2Client.getClientId()),
-                        "code", code,
-                        "grant_type", Objects.requireNonNull(Objects.requireNonNull(oAuth2Client.getGrantTypes()).get(0)),
-                        "redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0)
-                )
-                .entrySet()
-                .stream()
-                .map(entry -> String.join("=",
-                        URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
-                        URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
-                ).collect(Collectors.joining("&"));
+                                       "client_id",
+                                       Objects.requireNonNull(oAuth2Client.getClientId()),
+                                       "code",
+                                       code,
+                                       "grant_type",
+                                       Objects.requireNonNull(Objects.requireNonNull(oAuth2Client.getGrantTypes())
+                                                                     .get(0)),
+                                       "redirect_uri",
+                                       Objects.requireNonNull(oAuth2Client.getRedirectUris())
+                                              .get(0)
+                               )
+                               .entrySet()
+                               .stream()
+                               .map(entry -> String.join("=",
+                                                         URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8),
+                                                         URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
+                               )
+                               .collect(Collectors.joining("&"));
 
         val request = HttpRequest.newBuilder()
-                .uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .header("authorization", "Basic " + Base64.getEncoder().encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
-                .POST(HttpRequest.BodyPublishers.ofString(encodedParams))
-                .build();
+                                 .uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
+                                 .header("Content-Type", "application/x-www-form-urlencoded")
+                                 .header("authorization",
+                                         "Basic " + Base64.getEncoder()
+                                                          .encodeToString((oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret()).getBytes()))
+                                 .POST(HttpRequest.BodyPublishers.ofString(encodedParams))
+                                 .build();
 
         HttpResponse<String> codeExchangeResponse;
         try {
-            codeExchangeResponse = HttpClient.newBuilder().build()
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            codeExchangeResponse = HttpClient.newBuilder()
+                                             .build()
+                                             .send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -334,8 +368,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @Test
     public void skipConsentScreenOnSecondLoginWhenRememberMeIsUsed() {
         val screenshotPathProducer = ScreenshotPathProducer.builder()
-                .testName("skipConsentScreenOnSecondLoginWhenRememberMeIsUsed")
-                .build();
+                                                           .testName("skipConsentScreenOnSecondLoginWhenRememberMeIsUsed")
+                                                           .build();
         val page = browser.newPage();
 
         val uri = getUriToInitiateFlow();
@@ -343,16 +377,20 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.locator("input[name=loginEmail]").fill("foo@bar.com");
-        page.locator("input[name=loginPassword]").fill("password");
+        page.locator("input[name=loginEmail]")
+            .fill("foo@bar.com");
+        page.locator("input[name=loginPassword]")
+            .fill("password");
 
-        page.locator("input[name=submit]").click();
+        page.locator("input[name=submit]")
+            .click();
 
         page.waitForLoadState();
 
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
-        page.locator("input[id=accept]").click();
+        page.locator("input[id=accept]")
+            .click();
 
         page.waitForLoadState();
 
@@ -364,10 +402,13 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(getUriToInitiateFlow().toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
 
-        page.locator("input[name=loginEmail]").fill("foo@bar.com");
-        page.locator("input[name=loginPassword]").fill("password");
+        page.locator("input[name=loginEmail]")
+            .fill("foo@bar.com");
+        page.locator("input[name=loginPassword]")
+            .fill("password");
 
-        page.locator("input[name=submit]").click();
+        page.locator("input[name=submit]")
+            .click();
 
         page.waitForLoadState();
 
@@ -382,17 +423,17 @@ public class OryHydraReferenceApplicationFunctionalTests {
                 .accept(queryStringConsumerArgumentCaptor.capture());
         val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
         return Arrays.stream(queryStringValue.split("&"))
-                .filter(queryStringParam -> queryStringParam.startsWith("code="))
-                .findFirst()
-                .map(queryStringParam -> queryStringParam.replace("code=", ""))
-                .orElseThrow();
+                     .filter(queryStringParam -> queryStringParam.startsWith("code="))
+                     .findFirst()
+                     .map(queryStringParam -> queryStringParam.replace("code=", ""))
+                     .orElseThrow();
     }
 
     @Test
     public void doNotSkipConsentScreenOnSecondLoginWhenRememberMeIsFalse() {
         val screenshotPathProducer = ScreenshotPathProducer.builder()
-                .testName("doNotSkipConsentScreenOnSecondLoginWhenRememberMeIsFalse")
-                .build();
+                                                           .testName("doNotSkipConsentScreenOnSecondLoginWhenRememberMeIsFalse")
+                                                           .build();
 
         val page = browser.newPage();
 
@@ -401,19 +442,24 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(uri.toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
 
-        page.locator("input[name=loginEmail]").fill("foo@bar.com");
-        page.locator("input[name=loginPassword]").fill("password");
+        page.locator("input[name=loginEmail]")
+            .fill("foo@bar.com");
+        page.locator("input[name=loginPassword]")
+            .fill("password");
 
-        page.locator("input[name=submit]").click();
+        page.locator("input[name=submit]")
+            .click();
 
         page.waitForLoadState();
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
 
-        page.locator("input[id=remember]").uncheck();
+        page.locator("input[id=remember]")
+            .uncheck();
 
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-uncheck"));
 
-        page.locator("input[id=accept]").click();
+        page.locator("input[id=accept]")
+            .click();
 
         page.waitForLoadState();
 
@@ -425,10 +471,13 @@ public class OryHydraReferenceApplicationFunctionalTests {
         page.navigate(getUriToInitiateFlow().toString());
         page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
 
-        page.locator("input[name=loginEmail]").fill("foo@bar.com");
-        page.locator("input[name=loginPassword]").fill("password");
+        page.locator("input[name=loginEmail]")
+            .fill("foo@bar.com");
+        page.locator("input[name=loginPassword]")
+            .fill("password");
 
-        page.locator("input[name=submit]").click();
+        page.locator("input[name=submit]")
+            .click();
 
         page.waitForLoadState();
 
@@ -436,6 +485,43 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
         // Consent screen is not skipped
         assertThat(page.url()).contains("/consent");
+    }
+
+    private void waitForHydraReadiness() {
+        val readinessUri = URI.create(dockerComposeEnvironment.adminBaseUriString() + "/health/ready");
+        val httpClient = HttpClient.newHttpClient();
+        val deadline = Instant.now()
+                              .plus(Duration.ofSeconds(30));
+
+        while (Instant.now()
+                      .isBefore(deadline)) {
+            try {
+                val request = HttpRequest.newBuilder(readinessUri)
+                                         .timeout(Duration.ofSeconds(5))
+                                         .GET()
+                                         .build();
+                val response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+                if (response.statusCode() == 200) {
+                    return;
+                }
+            } catch (IOException e) {
+                // Hydra is still starting; retry until deadline.
+            } catch (InterruptedException e) {
+                Thread.currentThread()
+                      .interrupt();
+                throw new IllegalStateException("Interrupted while waiting for Hydra readiness", e);
+            }
+
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread()
+                      .interrupt();
+                throw new IllegalStateException("Interrupted while waiting for Hydra readiness", e);
+            }
+        }
+
+        throw new IllegalStateException("Hydra admin endpoint did not become ready within 30 seconds");
     }
 
 }

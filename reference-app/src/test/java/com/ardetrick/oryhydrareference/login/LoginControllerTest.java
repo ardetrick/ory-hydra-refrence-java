@@ -5,7 +5,8 @@ import com.ardetrick.oryhydrareference.login.LoginResult.LoginNotSkippableDispla
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,6 +24,9 @@ class LoginControllerTest {
     @MockitoBean
     LoginService loginService;
 
+    @MockitoBean
+    SecurityFilterChain securityFilterChain;
+
     @Test
     public void loginOptimistically_whenMissingLoginChallengeQueryParam_shouldReturn400() throws Exception {
         val loginChallenge = "example-login-challenge";
@@ -31,7 +35,7 @@ class LoginControllerTest {
                 .thenReturn(new LoginAcceptedFollowRedirect("redirect-location"));
 
         mockMvc.perform(get("/login"))
-                .andExpect(status().isBadRequest());
+               .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -42,9 +46,9 @@ class LoginControllerTest {
                 .thenReturn(new LoginAcceptedFollowRedirect("redirect-location"));
 
         mockMvc.perform(get("/login").queryParam("login_challenge", loginChallenge))
-                .andExpect(status().isFound())
-                .andExpect(header().exists("location"))
-                .andExpect(header().stringValues("location", "redirect-location"));
+               .andExpect(status().isFound())
+               .andExpect(header().exists("location"))
+               .andExpect(header().stringValues("location", "redirect-location"));
     }
 
     @Test
@@ -55,14 +59,14 @@ class LoginControllerTest {
                 .thenReturn(new LoginNotSkippableDisplayLoginUI(loginChallenge));
 
         mockMvc.perform(get("/login").queryParam("login_challenge", loginChallenge))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("""
-                        <form action="/login/usernamePassword" method="post">
-                        """)))
-                .andExpect(content().string(containsString("""
-                        <input type="hidden" name="loginChallenge" value="example-login-challenge" />
-                        """
-                )));
+               .andExpect(status().isOk())
+               .andExpect(content().string(containsString("""
+                                                                  <form action="/login/usernamePassword" method="post">
+                                                                  """)))
+               .andExpect(content().string(containsString("""
+                                                                  <input type="hidden" name="loginChallenge" value="example-login-challenge" />
+                                                                  """
+               )));
     }
 
 }
