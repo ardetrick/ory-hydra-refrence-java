@@ -11,7 +11,7 @@ dependencies {
     implementation("org.springframework.session:spring-session-core")
     implementation("sh.ory.hydra:hydra-client:25.4.0")
 
-    testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.3")
+    testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.4")
     testImplementation("com.auth0:java-jwt:4.5.0")
     testImplementation("com.microsoft.playwright:playwright:1.56.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
