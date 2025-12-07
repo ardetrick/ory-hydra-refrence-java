@@ -2,7 +2,7 @@
 version: "3.7"
 services:
   hydra:
-    image: oryd/hydra:v2.1.2
+    image: oryd/hydra:v25.4.0
     user: root
     ports:
       - 4444:4444
@@ -25,7 +25,7 @@ services:
     depends_on:
       - migrate
   migrate:
-    image: oryd/hydra:v2.1.2
+    image: oryd/hydra:v25.4.0
     user: root
     environment:
       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
