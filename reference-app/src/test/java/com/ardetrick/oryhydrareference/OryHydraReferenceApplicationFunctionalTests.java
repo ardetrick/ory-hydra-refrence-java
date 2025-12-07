@@ -45,8 +45,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -117,9 +115,6 @@ public class OryHydraReferenceApplicationFunctionalTests {
         // already using that port). There may be a cleaner approach out there (perhaps using Docker Networking?) but
         // in the meantime this is a low cost and sufficient work around.
         properties.setBasePath(dockerComposeEnvironment.publicBaseUriString());
-
-        // Temporary workaround: poll Hydra admin until /health/ready returns 200.
-        waitForHydraReadiness();
 
         oAuth2Client = createOAuthClient();
     }
@@ -485,43 +480,6 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
         // Consent screen is not skipped
         assertThat(page.url()).contains("/consent");
-    }
-
-    private void waitForHydraReadiness() {
-        val readinessUri = URI.create(dockerComposeEnvironment.adminBaseUriString() + "/health/ready");
-        val httpClient = HttpClient.newHttpClient();
-        val deadline = Instant.now()
-                              .plus(Duration.ofSeconds(30));
-
-        while (Instant.now()
-                      .isBefore(deadline)) {
-            try {
-                val request = HttpRequest.newBuilder(readinessUri)
-                                         .timeout(Duration.ofSeconds(5))
-                                         .GET()
-                                         .build();
-                val response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-                if (response.statusCode() == 200) {
-                    return;
-                }
-            } catch (IOException e) {
-                // Hydra is still starting; retry until deadline.
-            } catch (InterruptedException e) {
-                Thread.currentThread()
-                      .interrupt();
-                throw new IllegalStateException("Interrupted while waiting for Hydra readiness", e);
-            }
-
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread()
-                      .interrupt();
-                throw new IllegalStateException("Interrupted while waiting for Hydra readiness", e);
-            }
-        }
-
-        throw new IllegalStateException("Hydra admin endpoint did not become ready within 30 seconds");
     }
 
 }
