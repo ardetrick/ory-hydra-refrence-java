@@ -1,5 +1,5 @@
 plugins {
-    id("org.springframework.boot") version "4.0.1"
+    id("org.springframework.boot") version "4.0.2"
     id("project.java-conventions")
 }
 
@@ -13,7 +13,7 @@ dependencies {
 
     testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.4")
     testImplementation("com.auth0:java-jwt:4.5.0")
-    testImplementation("com.microsoft.playwright:playwright:1.57.0")
+    testImplementation("com.microsoft.playwright:playwright:1.58.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 }
