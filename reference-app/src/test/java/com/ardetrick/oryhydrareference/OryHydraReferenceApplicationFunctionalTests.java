@@ -2,7 +2,7 @@ package com.ardetrick.oryhydrareference;
 
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
 import com.ardetrick.oryhydrareference.test.utils.ScreenshotPathProducer;
-import com.ardetrick.testcontainers.OryHydraComposeContainer;
+import com.ardetrick.testcontainers.OryHydraContainer;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,13 +30,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.view.RedirectView;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import sh.ory.hydra.ApiException;
 import sh.ory.hydra.Configuration;
 import sh.ory.hydra.api.OAuth2Api;
 import sh.ory.hydra.model.OAuth2Client;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -59,7 +57,6 @@ import static org.mockito.Mockito.verify;
         ClientCallBackController.class,
         ForwardingController.class,
 })
-@Testcontainers
 @TestPropertySource(properties = {"debug=true"})
 public class OryHydraReferenceApplicationFunctionalTests {
 
@@ -70,7 +67,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     @LocalServerPort
     int springBootAppPort;
 
-    OryHydraComposeContainer dockerComposeEnvironment;
+    OryHydraContainer dockerComposeEnvironment;
 
     OAuth2Client oAuth2Client;
 
@@ -100,12 +97,12 @@ public class OryHydraReferenceApplicationFunctionalTests {
         // An alternative approach would be to start the container once and re-use it across all tests.
         // However, @BeforeAllTests requires the method be static but @LocalServerPort is unavailable statically.
         // Creating the containers for each test increases test execution time but keeps all tests isolated.
-        dockerComposeEnvironment = OryHydraComposeContainer.builder()
-                                                           .dockerComposeFile(new File("src/test/resources/docker-compose.yml"))
-                                                           .urlsLogin("http://localhost:" + springBootAppPort + "/login")
-                                                           .urlsConsent("http://localhost:" + springBootAppPort + "/consent")
-                                                           .urlsSelfIssuer("http://localhost:" + springBootAppPort + "/integration-test-public-proxy")
-                                                           .start();
+        dockerComposeEnvironment = OryHydraContainer.builder()
+                                                     .urlsLogin("http://localhost:" + springBootAppPort + "/login")
+                                                     .urlsConsent("http://localhost:" + springBootAppPort + "/consent")
+                                                     .urlsSelfIssuer("http://localhost:" + springBootAppPort + "/integration-test-public-proxy")
+                                                     .build();
+        dockerComposeEnvironment.start();
 
         // A "cheat" to break a circular dependency where the reference application needs to know the URI of Ory Hydra
         // and Ory Hydra needs to know the URI of the reference application. In a production application these two URIs
