@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -29,7 +29,7 @@ jobs:
           cache: 'gradle'
       - name: Setup ms-playwright cache
         id: setup-ms-playwright-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           # Some dependencies are downloaded to this directory
           path: /home/runner/.cache/ms-playwright
