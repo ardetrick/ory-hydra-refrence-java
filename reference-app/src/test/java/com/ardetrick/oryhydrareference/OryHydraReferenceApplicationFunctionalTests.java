@@ -156,11 +156,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
      * @link <a href="https://www.ory.sh/docs/reference/api#tag/wellknown/operation/discoverJsonWebKeys"/>
      */
     @Test
-    // TODO: after upgrading past testcontainers-ory-hydra 0.0.5, resolve jwks_uri from the
-    // discovery document (getOpenIdDiscoveryUri()) and drop this suppression.
-    @SuppressWarnings("removal")
     void requestToJwksUriReturns200() throws IOException, InterruptedException {
-        val request = HttpRequest.newBuilder(dockerComposeEnvironment.getPublicJwksUri())
+        val request = HttpRequest.newBuilder(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/.well-known/jwks.json"))
                                  .build();
         val response = HttpClient.newHttpClient()
                                  .send(
@@ -198,12 +195,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
         assertThat(page.content()).contains("invalid credentials try again");
     }
 
-    // TODO: after upgrading past testcontainers-ory-hydra 0.0.5, resolve authorization_endpoint
-    // from the discovery document (getOpenIdDiscoveryUri()) and drop this suppression.
-    @SuppressWarnings("removal")
     private URI getUriToInitiateFlow() {
         try {
-            return new URIBuilder(dockerComposeEnvironment.getOAuth2AuthUri())
+            return new URIBuilder(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth")
                     .addParameter("response_type", "code")
                     .addParameter("client_id", oAuth2Client.getClientId())
                     .addParameter("redirect_uri",
