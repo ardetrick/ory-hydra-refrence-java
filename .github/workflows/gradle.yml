@@ -28,14 +28,18 @@ jobs:
           distribution: 'temurin'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+      # Key the browser cache on the Playwright version alone so unrelated dependency
+      # bumps in the catalog do not trigger a browser reinstall.
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: echo "version=$(grep -m1 '^playwright = ' gradle/libs.versions.toml | cut -d'"' -f2)" >> "$GITHUB_OUTPUT"
       - name: Setup ms-playwright cache
         id: setup-ms-playwright-cache
         uses: actions/cache@v6
         with:
           # Some dependencies are downloaded to this directory
           path: /home/runner/.cache/ms-playwright
-          # There probably is a smarter way to create this key but this should be ok for now.
-          key: ms-playwright-chromium-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          key: ms-playwright-chromium-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
       - name: Install Playwright Dependencies
         if: steps.setup-ms-playwright-cache.outputs.cache-hit != 'true'
         # Chromium only — the only browser the tests use; one Gradle invocation.
