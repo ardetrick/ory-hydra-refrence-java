@@ -1,7 +1,24 @@
 [versions]
+foojayResolver = "0.9.0"
+freefairLombok = "9.5.0"
+hydraClient = "26.2.0"
+javaJwt = "4.5.2"
+playwright = "1.61.0"
+springBoot = "4.1.0"
+springDependencyManagement = "1.1.7"
 # Default pin. CI overrides this via -PtestcontainersOryHydraVersion (see settings.gradle.kts);
 # do not inline this version back into build.gradle.kts.
 testcontainersOryHydra = "0.0.6"
 
 [libraries]
+auth0-java-jwt = { module = "com.auth0:java-jwt", version.ref = "javaJwt" }
+# Plugin jars consumed by buildSrc (see buildSrc/settings.gradle.kts for the catalog import).
+foojay-resolver = { module = "org.gradle.toolchains:foojay-resolver", version.ref = "foojayResolver" }
+freefair-lombok-plugin = { module = "io.freefair.gradle:lombok-plugin", version.ref = "freefairLombok" }
+microsoft-playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
+ory-hydra-client = { module = "sh.ory.hydra:hydra-client", version.ref = "hydraClient" }
+spring-dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springDependencyManagement" }
 testcontainers-ory-hydra = { module = "com.ardetrick.testcontainers:testcontainers-ory-hydra", version.ref = "testcontainersOryHydra" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
