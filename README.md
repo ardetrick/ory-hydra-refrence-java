@@ -333,6 +333,25 @@ Get token (no scopes screen):
 
 ![get token](docs/images/remember-me/5-after-login-submit-second-time.png)
 
+## Building against a different testcontainers-ory-hydra version
+
+The `testcontainersOryHydraVersion` Gradle property overrides the version pinned in
+`gradle/libs.versions.toml`:
+
+```
+./gradlew build -PtestcontainersOryHydraVersion=0.0.6
+```
+
+This property is relied on by the [upstream canary workflow](.github/workflows/upstream-canary.yml)
+in this repository and by the pre-release compatibility workflow in
+[testcontainers-ory-hydra](https://github.com/ardetrick/testcontainers-ory-hydra), so keep it
+intact when refactoring the build. To build against an unreleased *checkout* of the library
+instead, use a Gradle composite build:
+
+```
+./gradlew build --include-build ../testcontainers-ory-hydra
+```
+
 ## Task List
 
 - [ ] Add a fancier UI

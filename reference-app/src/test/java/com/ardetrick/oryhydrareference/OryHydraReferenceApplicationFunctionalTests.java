@@ -156,6 +156,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
      * @link <a href="https://www.ory.sh/docs/reference/api#tag/wellknown/operation/discoverJsonWebKeys"/>
      */
     @Test
+    // TODO: after upgrading past testcontainers-ory-hydra 0.0.5, resolve jwks_uri from the
+    // discovery document (getOpenIdDiscoveryUri()) and drop this suppression.
+    @SuppressWarnings("removal")
     void requestToJwksUriReturns200() throws IOException, InterruptedException {
         val request = HttpRequest.newBuilder(dockerComposeEnvironment.getPublicJwksUri())
                                  .build();
@@ -195,6 +198,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
         assertThat(page.content()).contains("invalid credentials try again");
     }
 
+    // TODO: after upgrading past testcontainers-ory-hydra 0.0.5, resolve authorization_endpoint
+    // from the discovery document (getOpenIdDiscoveryUri()) and drop this suppression.
+    @SuppressWarnings("removal")
     private URI getUriToInitiateFlow() {
         try {
             return new URIBuilder(dockerComposeEnvironment.getOAuth2AuthUri())

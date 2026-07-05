@@ -11,7 +11,7 @@ dependencies {
     implementation("org.springframework.session:spring-session-core")
     implementation("sh.ory.hydra:hydra-client:26.2.0")
 
-    testImplementation("com.ardetrick.testcontainers:testcontainers-ory-hydra:0.0.5")
+    testImplementation(libs.testcontainers.ory.hydra)
     testImplementation("com.auth0:java-jwt:4.5.2")
     testImplementation("com.microsoft.playwright:playwright:1.61.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -24,6 +24,13 @@ tasks.withType<Test> {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Xlint")
+    // -Werror fails the build on any lint warning — notably uses of deprecated/for-removal
+    // upstream API. Intentional exceptions are marked with @SuppressWarnings at the call site.
+    // The upstream canary's lenient job disables it (-PlenientLint=true) so that new upstream
+    // deprecations read as a migration heads-up there, not as a break.
+    if (!providers.gradleProperty("lenientLint").map(String::toBoolean).getOrElse(false)) {
+        options.compilerArgs.add("-Werror")
+    }
 }
 
 // A way to run Playwright CLI commands using the Java source dependency.

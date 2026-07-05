@@ -1,0 +1,91 @@
+# Canary: builds this reference implementation against upstream
+# testcontainers-ory-hydra in a matrix of upstream targets and lint modes.
+#
+# Upstream targets:
+#   - main:           unreleased upstream, substituted via a Gradle composite
+#                     build (--include-build; matched by group:name, the pinned
+#                     version is ignored). Catches breaking changes before they
+#                     are released.
+#   - latest-release: the newest published artifact from Maven Central,
+#                     selected via -PtestcontainersOryHydraVersion. Catches
+#                     drift between this app's pin and the latest release, and
+#                     exercises the artifact users actually consume.
+#
+# Lint modes:
+#   - lenient red = that upstream target actually breaks this app: act now.
+#   - strict red with lenient green = new deprecation warnings from upstream:
+#     a migration heads-up, nothing is broken yet.
+#
+# Informational only — it does not gate merges.
+name: Upstream Canary
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Monday 09:00 UTC.
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: canary (${{ matrix.upstream }}, ${{ matrix.lint }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        upstream: [main, latest-release]
+        lint: [lenient, strict]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check out upstream testcontainers-ory-hydra (main)
+        if: matrix.upstream == 'main'
+        uses: actions/checkout@v7
+        with:
+          repository: ardetrick/testcontainers-ory-hydra
+          ref: main
+          path: upstream-library
+      - name: Resolve latest upstream release version
+        if: matrix.upstream == 'latest-release'
+        id: latest-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh api repos/ardetrick/testcontainers-ory-hydra/releases/latest --jq .tag_name)
+          echo "Latest upstream release: $TAG"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+      - name: Setup ms-playwright cache
+        id: setup-ms-playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: ms-playwright-cache-${{ runner.os }}-${{ hashFiles('reference-app/build.gradle.kts') }}
+      - name: Install Playwright Dependencies
+        if: steps.setup-ms-playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          ./gradlew playwright --args="install-deps" --no-daemon
+          ./gradlew playwright --args="install" --no-daemon
+      - name: Build against upstream main
+        if: matrix.upstream == 'main'
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        run: >
+          ./gradlew build
+          ${{ matrix.lint == 'lenient' && '-PlenientLint=true' || '' }}
+          --include-build upstream-library --no-daemon
+      - name: Build against latest upstream release
+        if: matrix.upstream == 'latest-release'
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        run: >
+          ./gradlew build
+          ${{ matrix.lint == 'lenient' && '-PlenientLint=true' || '' }}
+          -PtestcontainersOryHydraVersion=${{ steps.latest-release.outputs.version }}
+          --no-daemon
