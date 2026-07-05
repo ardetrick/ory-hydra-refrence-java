@@ -1,7 +1,7 @@
 [versions]
 # Default pin. CI overrides this via -PtestcontainersOryHydraVersion (see settings.gradle.kts);
 # do not inline this version back into build.gradle.kts.
-testcontainersOryHydra = "0.0.5"
+testcontainersOryHydra = "0.0.6"
 
 [libraries]
 testcontainers-ory-hydra = { module = "com.ardetrick.testcontainers:testcontainers-ory-hydra", version.ref = "testcontainersOryHydra" }
