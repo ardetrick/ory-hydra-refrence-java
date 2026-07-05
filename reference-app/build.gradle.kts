@@ -1,5 +1,5 @@
 plugins {
-    id("org.springframework.boot") version "4.1.0"
+    alias(libs.plugins.spring.boot)
     id("project.java-conventions")
 }
 
@@ -9,11 +9,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.session:spring-session-core")
-    implementation("sh.ory.hydra:hydra-client:26.2.0")
+    implementation(libs.ory.hydra.client)
 
     testImplementation(libs.testcontainers.ory.hydra)
-    testImplementation("com.auth0:java-jwt:4.5.2")
-    testImplementation("com.microsoft.playwright:playwright:1.61.0")
+    testImplementation(libs.auth0.java.jwt)
+    testImplementation(libs.microsoft.playwright)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 }
