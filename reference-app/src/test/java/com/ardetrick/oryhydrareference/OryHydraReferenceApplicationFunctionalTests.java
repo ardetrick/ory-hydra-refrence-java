@@ -82,6 +82,12 @@ public class OryHydraReferenceApplicationFunctionalTests {
   // test instance; @TestInstance(PER_CLASS) reuses that single instance for the whole class,
   // which is what allows @BeforeAll to be non-static — and therefore able to read the injected
   // @LocalServerPort — while still running exactly once before all tests.
+  //
+  // Deliberately NOT the idiomatic @Testcontainers/@Container-on-a-static-field pattern: that
+  // constructs the container at class-load time, but this container's configuration needs the
+  // injected @LocalServerPort, which only exists after the context boots. The alternatives all
+  // cost more than they save (a DEFINED_PORT app breaks parallel safety; an instance @Container
+  // restarts per test regardless of @TestInstance).
   @BeforeAll
   void startTestEnvironment() {
     playwright = Playwright.create();
