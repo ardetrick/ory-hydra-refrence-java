@@ -56,9 +56,10 @@ import org.springframework.web.servlet.view.RedirectView;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class OryHydraReferenceApplicationFunctionalTests {
 
-  // Shared between all tests in this class.
-  private static Playwright playwright;
-  private static Browser browser;
+  // Shared between all tests in this class — plain instance fields: under
+  // @TestInstance(PER_CLASS) the single test instance lives for the whole class.
+  private Playwright playwright;
+  private Browser browser;
 
   @LocalServerPort int springBootAppPort;
 
@@ -75,23 +76,20 @@ public class OryHydraReferenceApplicationFunctionalTests {
   @Captor
   ArgumentCaptor<String> queryStringConsumerArgumentCaptor = ArgumentCaptor.forClass(String.class);
 
+  @Autowired ForwardingController forwardingController;
+
+  // Lifecycle: the Spring context (and its random-port Tomcat) boots before JUnit creates the
+  // test instance; @TestInstance(PER_CLASS) reuses that single instance for the whole class,
+  // which is what allows @BeforeAll to be non-static — and therefore able to read the injected
+  // @LocalServerPort — while still running exactly once before all tests.
   @BeforeAll
-  static void beforeAll() {
+  void startTestEnvironment() {
     playwright = Playwright.create();
     browser = playwright.chromium().launch();
-  }
 
-  @AfterAll
-  static void afterAll() {
-    playwright.close();
-  }
-
-  @BeforeAll
-  void startHydra() {
     // One Hydra container serves every test in this class — containers are the expensive
     // resource. Test isolation is preserved by registering a unique OAuth2 client per test
-    // instead (see registerTestClient). @TestInstance(PER_CLASS) lets this run as a non-static
-    // @BeforeAll, which is what makes the injected @LocalServerPort available for Hydra's urls.
+    // instead (see registerTestClient).
     dockerComposeEnvironment =
         OryHydraContainer.builder()
             .urlsLogin("http://localhost:" + springBootAppPort + "/login")
@@ -101,17 +99,17 @@ public class OryHydraReferenceApplicationFunctionalTests {
             .build();
     dockerComposeEnvironment.start();
 
-    // A "cheat" to break a circular dependency: the reference application needs to know the URI
-    // of Ory Hydra and Ory Hydra needs to know the URI of the reference application, but both
-    // ports are randomized and unknown until each is already running. See ForwardingController.
-    // Two consumers, two different Hydra endpoints: the app's HydraAdminClient speaks the admin
-    // API, while the test's public proxy forwards browsers to the public authorize endpoint.
+    // Late-bind the two Hydra endpoints now that the mapped ports exist (the circular
+    // port dependency: the app and Hydra each need the other's randomized URI). Two consumers,
+    // two different endpoints: the app's HydraAdminClient speaks the admin API, while the
+    // test's public proxy forwards browsers to the public authorize endpoint.
     properties.setBasePath(dockerComposeEnvironment.adminBaseUriString());
-    ForwardingController.hydraPublicBaseUri = dockerComposeEnvironment.publicBaseUriString();
+    forwardingController.hydraPublicBaseUri = dockerComposeEnvironment.publicBaseUriString();
   }
 
   @AfterAll
-  void stopHydra() {
+  void stopTestEnvironment() {
+    playwright.close();
     dockerComposeEnvironment.stop();
   }
 
@@ -451,7 +449,7 @@ class ForwardingController {
   // Set by the test once Hydra's mapped public port is known; the proxy forwards browsers to
   // Hydra's public authorize endpoint (the admin base in HydraAdminClient.Properties is a
   // different endpoint for a different consumer).
-  static String hydraPublicBaseUri;
+  String hydraPublicBaseUri;
 
   @GetMapping("oauth2/auth")
   public RedirectView oauth2Auth() {
