@@ -45,10 +45,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.view.RedirectView;
-import sh.ory.hydra.ApiException;
-import sh.ory.hydra.Configuration;
-import sh.ory.hydra.api.OAuth2Api;
-import sh.ory.hydra.model.OAuth2Client;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -57,6 +53,7 @@ import sh.ory.hydra.model.OAuth2Client;
   ForwardingController.class,
 })
 @TestPropertySource(properties = {"debug=true"})
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class OryHydraReferenceApplicationFunctionalTests {
 
   // Shared between all tests in this class.
@@ -67,7 +64,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
   OryHydraContainer dockerComposeEnvironment;
 
-  OAuth2Client oAuth2Client;
+  String clientId;
+  String clientSecret;
+  String redirectUri;
 
   @Autowired HydraAdminClient.Properties properties;
 
@@ -87,14 +86,12 @@ public class OryHydraReferenceApplicationFunctionalTests {
     playwright.close();
   }
 
-  @BeforeEach
-  public void beforeEachTest() throws ApiException {
-    // Start Ory Hydra, passing it the port of the reference application to configure urls.
-    // An alternative approach would be to start the container once and re-use it across all tests.
-    // However, @BeforeAllTests requires the method be static but @LocalServerPort is unavailable
-    // statically.
-    // Creating the containers for each test increases test execution time but keeps all tests
-    // isolated.
+  @BeforeAll
+  void startHydra() {
+    // One Hydra container serves every test in this class — containers are the expensive
+    // resource. Test isolation is preserved by registering a unique OAuth2 client per test
+    // instead (see registerTestClient). @TestInstance(PER_CLASS) lets this run as a non-static
+    // @BeforeAll, which is what makes the injected @LocalServerPort available for Hydra's urls.
     dockerComposeEnvironment =
         OryHydraContainer.builder()
             .urlsLogin("http://localhost:" + springBootAppPort + "/login")
@@ -104,54 +101,37 @@ public class OryHydraReferenceApplicationFunctionalTests {
             .build();
     dockerComposeEnvironment.start();
 
-    // A "cheat" to break a circular dependency where the reference application needs to know the
-    // URI of Ory Hydra
-    // and Ory Hydra needs to know the URI of the reference application. In a production application
-    // these two URIs
-    // should be static and well known. However, in the context of these tests the ports of both the
-    // reference
-    // application and Ory Hydra are randomized and are unknown until after the application is
-    // already running
-    // (this follows testing best practices where hard coding ports should be avoided in case the
-    // host machine is
-    // already using that port). There may be a cleaner approach out there (perhaps using Docker
-    // Networking?) but
-    // in the meantime this is a low cost and sufficient work around.
-    properties.setBasePath(dockerComposeEnvironment.publicBaseUriString());
-
-    oAuth2Client = createOAuthClient();
+    // A "cheat" to break a circular dependency: the reference application needs to know the URI
+    // of Ory Hydra and Ory Hydra needs to know the URI of the reference application, but both
+    // ports are randomized and unknown until each is already running. See ForwardingController.
+    // Two consumers, two different Hydra endpoints: the app's HydraAdminClient speaks the admin
+    // API, while the test's public proxy forwards browsers to the public authorize endpoint.
+    properties.setBasePath(dockerComposeEnvironment.adminBaseUriString());
+    ForwardingController.hydraPublicBaseUri = dockerComposeEnvironment.publicBaseUriString();
   }
 
-  @AfterEach
-  public void afterEachTest() {
-    // Test containers must be stopped to avoid a port conflict error when starting them up again
-    // for the next test.
+  @AfterAll
+  void stopHydra() {
     dockerComposeEnvironment.stop();
   }
 
-  private OAuth2Client createOAuthClient() throws ApiException {
-    val oAuth2Client = new OAuth2Client();
-    oAuth2Client.clientName("test-client");
-    oAuth2Client.redirectUris(
-        List.of("http://localhost:" + springBootAppPort + CLIENT_CALL_BACK_PATH));
-    oAuth2Client.grantTypes(List.of("authorization_code", "refresh_token"));
-    oAuth2Client.responseTypes(List.of("code", "id_token"));
-    oAuth2Client.clientSecret("client-secret");
-    oAuth2Client.scope(String.join(" ", "offline_access", "openid", "offline", "profile"));
-
-    // Initialize API
-    val oauth2Api =
-        new OAuth2Api(
-            Configuration.getDefaultApiClient()
-                .setBasePath(dockerComposeEnvironment.adminBaseUriString()));
-
-    // Create client
-    val oauth2Client = oauth2Api.createOAuth2Client(oAuth2Client);
-
-    // Basic assertions on created client
-    assertThat(oauth2Api.getOAuth2Client(oauth2Client.getClientId())).isNotNull();
-
-    return oauth2Client;
+  @BeforeEach
+  public void registerTestClient() {
+    // A unique client per test keeps tests isolated on the shared container: Hydra remembers
+    // consent per subject + client, so a shared client would leak remembered consent between
+    // tests. Registration is a cheap upserting admin API call via the container.
+    clientId = "test-client-" + UUID.randomUUID();
+    clientSecret = "client-secret";
+    redirectUri = "http://localhost:" + springBootAppPort + CLIENT_CALL_BACK_PATH;
+    dockerComposeEnvironment.createOrReplaceClient(
+        client ->
+            client
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .redirectUris(redirectUri)
+                .grantTypes("authorization_code", "refresh_token")
+                .responseTypes("code", "id_token")
+                .scope("offline_access", "openid", "offline", "profile"));
   }
 
   /**
@@ -198,9 +178,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
     try {
       return new URIBuilder(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth")
           .addParameter("response_type", "code")
-          .addParameter("client_id", oAuth2Client.getClientId())
-          .addParameter(
-              "redirect_uri", Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
+          .addParameter("client_id", clientId)
+          .addParameter("redirect_uri", redirectUri)
           .addParameter("scope", "offline_access openid offline profile")
           .addParameter("state", "12345678901234567890")
           .build();
@@ -292,14 +271,10 @@ public class OryHydraReferenceApplicationFunctionalTests {
   private CodeExchangeResponse exchangeCode(String code) {
     val encodedParams =
         Map.of(
-                "client_id",
-                Objects.requireNonNull(oAuth2Client.getClientId()),
-                "code",
-                code,
-                "grant_type",
-                Objects.requireNonNull(Objects.requireNonNull(oAuth2Client.getGrantTypes()).get(0)),
-                "redirect_uri",
-                Objects.requireNonNull(oAuth2Client.getRedirectUris()).get(0))
+                "client_id", clientId,
+                "code", code,
+                "grant_type", "authorization_code",
+                "redirect_uri", redirectUri)
             .entrySet()
             .stream()
             .map(
@@ -318,9 +293,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
                 "authorization",
                 "Basic "
                     + Base64.getEncoder()
-                        .encodeToString(
-                            (oAuth2Client.getClientId() + ":" + oAuth2Client.getClientSecret())
-                                .getBytes()))
+                        .encodeToString((clientId + ":" + clientSecret).getBytes()))
             .POST(HttpRequest.BodyPublishers.ofString(encodedParams))
             .build();
 
@@ -475,11 +448,14 @@ record CodeExchangeResponse(
 @RequestMapping("/integration-test-public-proxy")
 class ForwardingController {
 
-  @Autowired HydraAdminClient.Properties properties;
+  // Set by the test once Hydra's mapped public port is known; the proxy forwards browsers to
+  // Hydra's public authorize endpoint (the admin base in HydraAdminClient.Properties is a
+  // different endpoint for a different consumer).
+  static String hydraPublicBaseUri;
 
   @GetMapping("oauth2/auth")
   public RedirectView oauth2Auth() {
-    val redirectView = new RedirectView(properties.getBasePath() + "/oauth2/auth");
+    val redirectView = new RedirectView(hydraPublicBaseUri + "/oauth2/auth");
     redirectView.setPropagateQueryParams(true);
     return redirectView;
   }
