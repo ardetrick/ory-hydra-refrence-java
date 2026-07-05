@@ -1,6 +1,20 @@
 plugins {
     alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spotless)
     id("project.java-conventions")
+}
+
+spotless {
+    java {
+        googleJavaFormat(libs.versions.googleJavaFormat.get())
+        formatAnnotations()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+    kotlinGradle {
+        ktlint()
+    }
 }
 
 dependencies {

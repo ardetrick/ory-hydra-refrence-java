@@ -17,40 +17,41 @@ import org.springframework.stereotype.Service;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ConsentService {
 
-    @NonNull HydraAdminClient hydraAdminClient;
+  @NonNull HydraAdminClient hydraAdminClient;
 
-    public ConsentResponse processInitialConsentRequest(@NonNull final String consentChallenge) {
-        val consentRequest = hydraAdminClient.getConsentRequest(consentChallenge);
+  public ConsentResponse processInitialConsentRequest(@NonNull final String consentChallenge) {
+    val consentRequest = hydraAdminClient.getConsentRequest(consentChallenge);
 
-        if (Boolean.TRUE.equals(consentRequest.getSkip())) {
-            val acceptConsentRequest = AcceptConsentRequest.builder()
-                    .consentChallenge(consentChallenge)
-                    .remember(true)
-                    .grantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience())
-                    .scopes(consentRequest.getRequestedScope())
-                    .build();
-            val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
-            return new Skip(acceptConsentResponse.getRedirectTo());
-        }
-
-        return new DisplayUI(consentRequest.getRequestedScope(), consentChallenge);
+    if (Boolean.TRUE.equals(consentRequest.getSkip())) {
+      val acceptConsentRequest =
+          AcceptConsentRequest.builder()
+              .consentChallenge(consentChallenge)
+              .remember(true)
+              .grantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience())
+              .scopes(consentRequest.getRequestedScope())
+              .build();
+      val acceptConsentResponse = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
+      return new Skip(acceptConsentResponse.getRedirectTo());
     }
 
-    public ConsentResponse processConsentForm(@NonNull final ConsentForm consentForm) {
-        val consentChallenge = consentForm.consentChallenge();
+    return new DisplayUI(consentRequest.getRequestedScope(), consentChallenge);
+  }
 
-        val consentRequest = hydraAdminClient.getConsentRequest(consentChallenge);
+  public ConsentResponse processConsentForm(@NonNull final ConsentForm consentForm) {
+    val consentChallenge = consentForm.consentChallenge();
 
-        val acceptConsentRequest = AcceptConsentRequest.builder()
-                .consentChallenge(consentChallenge)
-                .remember(consentForm.isRemember())
-                .grantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience())
-                .scopes(consentForm.scopes())
-                .build();
+    val consentRequest = hydraAdminClient.getConsentRequest(consentChallenge);
 
-        val oauth2RedirectTo = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
+    val acceptConsentRequest =
+        AcceptConsentRequest.builder()
+            .consentChallenge(consentChallenge)
+            .remember(consentForm.isRemember())
+            .grantAccessTokenAudience(consentRequest.getRequestedAccessTokenAudience())
+            .scopes(consentForm.scopes())
+            .build();
 
-        return new Accepted(oauth2RedirectTo.getRedirectTo());
-    }
+    val oauth2RedirectTo = hydraAdminClient.acceptConsentRequest(acceptConsentRequest);
 
+    return new Accepted(oauth2RedirectTo.getRedirectTo());
+  }
 }
