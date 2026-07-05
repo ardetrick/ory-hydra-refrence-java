@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 /**
- * This controller is for demonstration purposes only to make it easier to run through the OAuth2 flow and interact with
- * Hydra clients. It is not required nor expected to be used for any production use cases.
+ * This controller is for demonstration purposes only to make it easier to run through the OAuth2
+ * flow and interact with Hydra clients. It is not required nor expected to be used for any
+ * production use cases.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -25,18 +26,19 @@ import org.springframework.web.servlet.ModelAndView;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DemoController {
 
-    @NonNull HydraAdminClient hydraAdminClient;
+  @NonNull HydraAdminClient hydraAdminClient;
 
-    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE})
-    @ResponseBody
-    public ModelAndView test() {
-        val clients = hydraAdminClient.listOAuth2Clients()
-                .stream()
-                .map(client -> new MvcClient(client.getClientName(), client.getClientId(), client.getRedirectUris()))
-                .toList();
+  @GetMapping(produces = {MediaType.TEXT_HTML_VALUE})
+  @ResponseBody
+  public ModelAndView test() {
+    val clients =
+        hydraAdminClient.listOAuth2Clients().stream()
+            .map(
+                client ->
+                    new MvcClient(
+                        client.getClientName(), client.getClientId(), client.getRedirectUris()))
+            .toList();
 
-        return new ModelAndView("demo")
-                .addObject("clients", clients);
-    }
-
+    return new ModelAndView("demo").addObject("clients", clients);
+  }
 }

@@ -15,29 +15,35 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class ConsentController {
 
-    @NonNull ConsentService consentService;
+  @NonNull ConsentService consentService;
 
-    /**
-     * The Consent Endpoint (set by urls.consent) is an application written by you. You can find an exemplary Node.js reference implementation on our GitHub.
-     * The Consent Endpoint uses the consent_challenge value in the URL to fetch information about the consent request by making a HTTP GET request to:
-     * http(s)://<HYDRA_ADMIN_URL>/oauth2/auth/requests/consent?consent_challenge=<challenge>
-     * The response (see below in "Consent Challenge Response" tab) contains information about the consent request. The body contains a skip value. If the value is false, the user interface must be shown. If skip is true, you shouldn't show the user interface but instead just accept or reject the consent request! For more details about the implementation check the "Implementing the Consent Endpoint" Guide.
-     * <p>
-     * <a href="https://www.ory.sh/docs/hydra/guides/login">...</a>
-     * <a href="https://www.ory.sh/docs/hydra/concepts/consent">...</a>
-     */
-    @GetMapping
-    public ModelAndView consentEndpoint(@RequestParam("consent_challenge") final String consentChallenge) {
-        val response = consentService.processInitialConsentRequest(consentChallenge);
+  /**
+   * The Consent Endpoint (set by urls.consent) is an application written by you. You can find an
+   * exemplary Node.js reference implementation on our GitHub. The Consent Endpoint uses the
+   * consent_challenge value in the URL to fetch information about the consent request by making a
+   * HTTP GET request to:
+   * http(s)://<HYDRA_ADMIN_URL>/oauth2/auth/requests/consent?consent_challenge=<challenge> The
+   * response (see below in "Consent Challenge Response" tab) contains information about the consent
+   * request. The body contains a skip value. If the value is false, the user interface must be
+   * shown. If skip is true, you shouldn't show the user interface but instead just accept or reject
+   * the consent request! For more details about the implementation check the "Implementing the
+   * Consent Endpoint" Guide.
+   *
+   * <p><a href="https://www.ory.sh/docs/hydra/guides/login">...</a> <a
+   * href="https://www.ory.sh/docs/hydra/concepts/consent">...</a>
+   */
+  @GetMapping
+  public ModelAndView consentEndpoint(
+      @RequestParam("consent_challenge") final String consentChallenge) {
+    val response = consentService.processInitialConsentRequest(consentChallenge);
 
-        return ConsentModelAndViewMapper.map(response);
-    }
+    return ConsentModelAndViewMapper.map(response);
+  }
 
-    @PostMapping
-    public ModelAndView submitConsentForm(final ConsentForm consentForm) {
-        val consentResponse = consentService.processConsentForm(consentForm);
+  @PostMapping
+  public ModelAndView submitConsentForm(final ConsentForm consentForm) {
+    val consentResponse = consentService.processConsentForm(consentForm);
 
-        return ConsentModelAndViewMapper.map(consentResponse);
-    }
-
+    return ConsentModelAndViewMapper.map(consentResponse);
+  }
 }
