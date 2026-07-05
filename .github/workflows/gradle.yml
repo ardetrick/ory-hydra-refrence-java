@@ -34,12 +34,11 @@ jobs:
           # Some dependencies are downloaded to this directory
           path: /home/runner/.cache/ms-playwright
           # There probably is a smarter way to create this key but this should be ok for now.
-          key: ms-playwright-cache-${{ runner.os }}-${{ hashFiles('**/build.gradle.kts') }}
+          key: ms-playwright-chromium-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
       - name: Install Playwright Dependencies
         if: steps.setup-ms-playwright-cache.outputs.cache-hit != 'true'
-        run: |
-          ./gradlew playwright --args="install-deps" --no-daemon
-          ./gradlew playwright --args="install" --no-daemon
+        # Chromium only — the only browser the tests use; one Gradle invocation.
+        run: ./gradlew playwright --args="install --with-deps chromium" --no-daemon
       - name: build
         env:
           # Browsers will have been installed earlier
