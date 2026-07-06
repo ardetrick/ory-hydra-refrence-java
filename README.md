@@ -2,9 +2,9 @@
 
 This is an _unofficial_ reference implementation of the User Login and Consent flow of an
 [Ory Hydra](https://github.com/ory) OAuth 2.0 server written in Java with SpringBoot. This project demos some
-key features/flows/integrations and the of OAuth 2.0 Authorization Code Grant flow. It is mean to be a foundation for
-production implementations, but it is not an exhaustive implementation nor is guaranteed to be secure, bug free, fully
-tested, or production ready.
+key features, flows, and integrations of the OAuth 2.0 Authorization Code Grant flow. It is meant to be a foundation
+for production implementations, but it is not an exhaustive implementation nor is it guaranteed to be secure, bug
+free, fully tested, or production ready.
 
 Similar reference implementations can be found on
 the [Getting Started](https://www.ory.sh/docs/getting-started/overview)
@@ -65,19 +65,19 @@ The functional tests for this project run along all other tests with the standar
 ```
 
 The functional tests are unique because there is practically no mocking. This makes for a slightly more complicated
-setup, but it allows us to reproduce scenarios in a context very similar to what would be seen in production, all they
+setup, but it allows us to reproduce scenarios in a context very similar to what would be seen in production, all the
 way from interacting with the UI back to Ory Hydra.
 
 1. Using `@SpringBootTest`, the application is started on a random port. Note that the application also configures two
    extra controllers to help facilitate testing.
-2. A Playwright browser instance is created (this will be shared for all tests).
-3. Before each test, a new Test Container instance of Ory Hydra is started. This instance of Ory Hydra is running with
-   an in memory database.
-4. A Hydra OAuth client is created.
+2. A Playwright browser instance is created (shared by all tests).
+3. A single Test Container instance of Ory Hydra is started and shared by every test in the class. It runs with an
+   in-container SQLite database.
+4. Before each test, a unique Hydra OAuth client is created. Hydra remembers consent per subject and client, so a
+   fresh client per test keeps tests isolated on the shared container.
 5. The Playwright browser loads the `/oauth2/auth` endpoint with the client's information.
 6. The Playwright api is used to interact with the UI just as a user would do.
 7. Optionally, the code may be exchanged for the token response.
-8. Repeat from Step 3 for each test.
 
 The extra controllers created are not ideal but are useful for testing. One of them is a `ForwardingController` which
 helps work around some networking challenges with a circular dependency in configuration between the application and Ory
@@ -89,15 +89,8 @@ provides a hook for the client call back. This allows us to verify that Hydra ac
 and provides us access to the `code` value so that it can be exchanged for the token response.
 
 Since the token flow of OAuth is inherently UI driven, it is imperative that the UI be the driver for the tests. To aid
-with this the `Playwright` framework is used. Allows us to use a headless driver to load the UI and use HTML selectors
-to interact with the loaded page just like a human would.
-
-Due to the overhead of Test Containers, the tests are a bit slow and there is likely some optimization that could be
-made so that the Ory Hydra containers are re-used across each test rather than recreated for each test.
-
-#### Playwright
-
-#### Test Containers
+with this the `Playwright` framework is used. It allows us to use a headless driver to load the UI and use HTML
+selectors to interact with the loaded page just like a human would.
 
 ### Running With Local Ory Hydra
 
@@ -109,18 +102,22 @@ Note: All steps require Docker and some require `jq`. All commands should run re
 #### Start Hydra And The Reference App
 
 ```
-# Pull Hydra
-docker pull oryd/hydra:v2.0.2
-
-# Use the same docker-compose file used by the functional tests to start Hydra 
-# with an in memory database and run the migration sccripts. 
-docker-compose -f ./reference-app/src/test/resources/docker-compose.yml up --build
+# Start Hydra with an in-container SQLite database, running the migrations first —
+# the same single-container setup the functional tests get from testcontainers-ory-hydra.
+docker run --rm --name hydra \
+  -p 4444:4444 -p 4445:4445 \
+  -e DSN="sqlite:///tmp/db.sqlite?_fk=true" \
+  -e SECRETS_SYSTEM=local-dev-secret \
+  -e URLS_LOGIN=http://localhost:8080/login \
+  -e URLS_CONSENT=http://localhost:8080/consent \
+  --entrypoint sh oryd/hydra:v25.4.0 \
+  -c "hydra migrate sql -e --yes && hydra serve all --dev"
 
 # At this point Hydra urls such as http://localhost:4445/admin/clients should be up and running.
 
 # Open a new terminal...
 
-# Start the Spring app. 
+# Start the Spring app.
 ./gradlew bootRun
 
 # At this point the reference app pages such as localhost:8080/index.html should load.
@@ -138,7 +135,7 @@ Otherwise, follow these instructions to create a client and test it by going thr
 
 ```
 # Create a client. Uses the Hydra container to access the Hydra CLI.
-hydra_client=$(docker-compose -f ./reference-app/src/test/resources/docker-compose.yml exec hydra \
+hydra_client=$(docker exec hydra \
     hydra create client \
     --endpoint http://127.0.0.1:4445 \
     --grant-type authorization_code,refresh_token \
@@ -165,7 +162,7 @@ curl -X PATCH \
 oauth_endpoint="http://localhost:4444/oauth2/auth?\
 client_id=${hydra_client_id}&\
 response_type=code&\
-redirect_uri=${client_redirect_uri_0}&\
+redirect_uri=${hydra_client_redirect_uri_0}&\
 scope=openid+offline&\
 state=123456789"
 
@@ -173,7 +170,7 @@ state=123456789"
 echo $oauth_endpoint
 
 # Click on the printed endpoint (or paste it into a browser).
-# Complete the OAuth flow (by default the hard coded crentials are username: foo@bar.com password: password).
+# Complete the OAuth flow (by default the hard coded credentials are username: foo@bar.com password: password).
 
 # replace '...' with the `code` query param in the call back.
 code=... 
@@ -185,7 +182,7 @@ curl -X POST \
   -d "grant_type=authorization_code" \
   -d "code=${code}" \
   -d "redirect_uri=http%3A%2F%2F127.0.0.1%3A5555%2Fcallback" \
-  -d "client_id=${code_client_id}" \
+  -d "client_id=${hydra_client_id}" \
   http://127.0.0.1:4444/oauth2/token
 ```
 
@@ -242,7 +239,7 @@ sequenceDiagram
 When the code is exchanged the response contains a `id_token` key with a JWT string. Additional information about that
 token can be found [here](https://openid.net/specs/openid-connect-core-1_0.html).
 
-You can also see how this demo includes how to include "custom" claims that are not part of the OIDC spect.
+This demo also shows how to include "custom" claims that are not part of the OIDC spec.
 Look in the JWT for the value `example custom claim value`.
 
 Here is an example JWT json:
@@ -365,4 +362,3 @@ instead, use a Gradle composite build:
 - [ ] Log out
 - [ ] Add example with Ory Cloud
 
-## Additional Notes

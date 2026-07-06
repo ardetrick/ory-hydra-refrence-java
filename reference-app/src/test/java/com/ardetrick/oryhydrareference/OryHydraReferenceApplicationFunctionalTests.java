@@ -63,7 +63,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
   @LocalServerPort int springBootAppPort;
 
-  OryHydraContainer dockerComposeEnvironment;
+  OryHydraContainer oryHydraContainer;
 
   String clientId;
   String clientSecret;
@@ -96,27 +96,27 @@ public class OryHydraReferenceApplicationFunctionalTests {
     // One Hydra container serves every test in this class — containers are the expensive
     // resource. Test isolation is preserved by registering a unique OAuth2 client per test
     // instead (see registerTestClient).
-    dockerComposeEnvironment =
+    oryHydraContainer =
         OryHydraContainer.builder()
             .urlsLogin("http://localhost:" + springBootAppPort + "/login")
             .urlsConsent("http://localhost:" + springBootAppPort + "/consent")
             .urlsSelfIssuer(
                 "http://localhost:" + springBootAppPort + "/integration-test-public-proxy")
             .build();
-    dockerComposeEnvironment.start();
+    oryHydraContainer.start();
 
     // Late-bind the two Hydra endpoints now that the mapped ports exist (the circular
     // port dependency: the app and Hydra each need the other's randomized URI). Two consumers,
     // two different endpoints: the app's HydraAdminClient speaks the admin API, while the
     // test's public proxy forwards browsers to the public authorize endpoint.
-    properties.setBasePath(dockerComposeEnvironment.adminBaseUriString());
-    forwardingController.hydraPublicBaseUri = dockerComposeEnvironment.publicBaseUriString();
+    properties.setBasePath(oryHydraContainer.adminBaseUriString());
+    forwardingController.hydraPublicBaseUri = oryHydraContainer.publicBaseUriString();
   }
 
   @AfterAll
   void stopTestEnvironment() {
     playwright.close();
-    dockerComposeEnvironment.stop();
+    oryHydraContainer.stop();
   }
 
   @BeforeEach
@@ -127,7 +127,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     clientId = "test-client-" + UUID.randomUUID();
     clientSecret = "client-secret";
     redirectUri = "http://localhost:" + springBootAppPort + CLIENT_CALL_BACK_PATH;
-    dockerComposeEnvironment.createOrReplaceClient(
+    oryHydraContainer.createOrReplaceClient(
         client ->
             client
                 .clientId(clientId)
@@ -148,8 +148,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
   void requestToJwksUriReturns200() throws IOException, InterruptedException {
     val request =
         HttpRequest.newBuilder(
-                URI.create(
-                    dockerComposeEnvironment.publicBaseUriString() + "/.well-known/jwks.json"))
+                URI.create(oryHydraContainer.publicBaseUriString() + "/.well-known/jwks.json"))
             .build();
     val response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -180,7 +179,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
   private URI getUriToInitiateFlow() {
     try {
-      return new URIBuilder(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/auth")
+      return new URIBuilder(oryHydraContainer.publicBaseUriString() + "/oauth2/auth")
           .addParameter("response_type", "code")
           .addParameter("client_id", clientId)
           .addParameter("redirect_uri", redirectUri)
@@ -291,7 +290,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
     val request =
         HttpRequest.newBuilder()
-            .uri(URI.create(dockerComposeEnvironment.publicBaseUriString() + "/oauth2/token"))
+            .uri(URI.create(oryHydraContainer.publicBaseUriString() + "/oauth2/token"))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .header(
                 "authorization",
