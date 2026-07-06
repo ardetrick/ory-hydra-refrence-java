@@ -3,11 +3,21 @@ package com.ardetrick.oryhydrareference.hydra;
 import lombok.NonNull;
 import sh.ory.hydra.model.AcceptOAuth2ConsentRequest;
 import sh.ory.hydra.model.AcceptOAuth2ConsentRequestSession;
+import sh.ory.hydra.model.AcceptOAuth2LoginRequest;
 import sh.ory.hydra.model.RejectOAuth2Request;
 
 public class OryHydraRequestMapper {
 
   private static final Long DEFAULT_SESSION_EXPIRATION_IN_SECONDS = 3600L;
+
+  public static AcceptOAuth2LoginRequest map(@NonNull final AcceptLoginRequest acceptLoginRequest) {
+    // Subject is an alias for user ID. A subject can be a random string, a UUID, an email
+    // address, ...
+    return new AcceptOAuth2LoginRequest()
+        .subject(acceptLoginRequest.subject())
+        .remember(acceptLoginRequest.remember())
+        .rememberFor(DEFAULT_SESSION_EXPIRATION_IN_SECONDS);
+  }
 
   public static AcceptOAuth2ConsentRequest map(
       @NonNull final AcceptConsentRequest acceptConsentRequest) {

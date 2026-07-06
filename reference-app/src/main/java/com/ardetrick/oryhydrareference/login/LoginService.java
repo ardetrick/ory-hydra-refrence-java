@@ -1,5 +1,6 @@
 package com.ardetrick.oryhydrareference.login;
 
+import com.ardetrick.oryhydrareference.hydra.AcceptLoginRequest;
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
 import com.ardetrick.oryhydrareference.login.LoginResult.LoginAcceptedFollowRedirect;
 import com.ardetrick.oryhydrareference.login.LoginResult.LoginDeniedInvalidCredentials;
@@ -31,8 +32,17 @@ public class LoginService {
     val loginRequest = maybeLoginRequest.get();
 
     if (loginRequest.getSkip()) {
-      hydraAdminClient.acceptLoginRequest(loginChallenge, loginRequest.getSubject());
-      return new LoginAcceptedFollowRedirect(loginRequest.getRequestUrl());
+      // The session is already remembered, so there is nothing new to remember. Follow the
+      // accept response's redirect (redirecting back to the original request URL would replay
+      // the authorization request and loop straight back here).
+      val completedRequest =
+          hydraAdminClient.acceptLoginRequest(
+              AcceptLoginRequest.builder()
+                  .loginChallenge(loginChallenge)
+                  .subject(loginRequest.getSubject())
+                  .remember(false)
+                  .build());
+      return new LoginAcceptedFollowRedirect(completedRequest.getRedirectTo());
     }
 
     return new LoginNotSkippableDisplayLoginUI(loginChallenge);
@@ -51,7 +61,12 @@ public class LoginService {
     }
 
     val completedRequest =
-        hydraAdminClient.acceptLoginRequest(loginChallenge, loginForm.loginEmail());
+        hydraAdminClient.acceptLoginRequest(
+            AcceptLoginRequest.builder()
+                .loginChallenge(loginChallenge)
+                .subject(loginForm.loginEmail())
+                .remember(loginForm.isRemember())
+                .build());
 
     return new LoginAcceptedFollowRedirect(completedRequest.getRedirectTo());
   }

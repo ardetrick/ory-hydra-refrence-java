@@ -13,6 +13,9 @@
   <label for="loginPassword">Password:</label>
   <input type="password" name="loginPassword" placeholder="password" /><br>
 
+  <label for="remember">Remember me:</label>
+  <input type="checkbox" id="remember" name="remember" /><br>
+
   <input type="submit" name="submit" value="Log in" />
 </form>
 
