@@ -3,6 +3,7 @@ package com.ardetrick.oryhydrareference.hydra;
 import lombok.NonNull;
 import sh.ory.hydra.model.AcceptOAuth2ConsentRequest;
 import sh.ory.hydra.model.AcceptOAuth2ConsentRequestSession;
+import sh.ory.hydra.model.RejectOAuth2Request;
 
 public class OryHydraRequestMapper {
 
@@ -16,6 +17,12 @@ public class OryHydraRequestMapper {
         .remember(acceptConsentRequest.remember())
         .rememberFor(DEFAULT_SESSION_EXPIRATION_IN_SECONDS)
         .session(getAcceptOAuth2ConsentRequestSession());
+  }
+
+  public static RejectOAuth2Request map(@NonNull final RejectConsentRequest rejectConsentRequest) {
+    return new RejectOAuth2Request()
+        .error(rejectConsentRequest.error())
+        .errorDescription(rejectConsentRequest.errorDescription());
   }
 
   private static AcceptOAuth2ConsentRequestSession getAcceptOAuth2ConsentRequestSession() {

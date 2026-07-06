@@ -357,7 +357,7 @@ instead, use a Gradle composite build:
 - [ ] Add a fancier UI
 - [ ] Refactor controller/service logic to be more consistent
 - [ ] Tests to mock Ory Hydra responses
-- [ ] Allow rejecting on consent screen
+- [x] Allow rejecting on consent screen
 - [ ] Add more unit tests
 - [ ] Document playwright usage
 - [ ] Show login errors on login screen

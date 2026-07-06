@@ -3,7 +3,10 @@ package com.ardetrick.oryhydrareference.consent;
 import java.util.List;
 
 public sealed interface ConsentResponse
-    permits ConsentResponse.Accepted, ConsentResponse.DisplayUI, ConsentResponse.Skip {
+    permits ConsentResponse.Accepted,
+        ConsentResponse.Denied,
+        ConsentResponse.DisplayUI,
+        ConsentResponse.Skip {
 
   record Skip(String redirectTo) implements ConsentResponse {}
 
@@ -11,4 +14,6 @@ public sealed interface ConsentResponse
       implements ConsentResponse {}
 
   record Accepted(String redirectTo) implements ConsentResponse {}
+
+  record Denied(String redirectTo) implements ConsentResponse {}
 }
