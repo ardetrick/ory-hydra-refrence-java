@@ -18,8 +18,8 @@
   <label for="remember">Remember me:</label>
   <input type="checkbox" id="remember" name="remember" checked /><br>
 
-  <input type="submit" id="accept" name="submit" value="Allow access" />
-  <input type="submit" id="reject" name="submit" value="Deny access" />
+  <input type="submit" id="accept" name="accept" value="Allow access" />
+  <input type="submit" id="reject" name="deny" value="Deny access" />
 </form>
 </body>
 </html>

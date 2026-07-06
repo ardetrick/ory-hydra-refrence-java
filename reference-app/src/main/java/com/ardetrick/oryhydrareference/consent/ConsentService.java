@@ -1,10 +1,12 @@
 package com.ardetrick.oryhydrareference.consent;
 
 import com.ardetrick.oryhydrareference.consent.ConsentResponse.Accepted;
+import com.ardetrick.oryhydrareference.consent.ConsentResponse.Denied;
 import com.ardetrick.oryhydrareference.consent.ConsentResponse.DisplayUI;
 import com.ardetrick.oryhydrareference.consent.ConsentResponse.Skip;
 import com.ardetrick.oryhydrareference.hydra.AcceptConsentRequest;
 import com.ardetrick.oryhydrareference.hydra.HydraAdminClient;
+import com.ardetrick.oryhydrareference.hydra.RejectConsentRequest;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,17 @@ public class ConsentService {
 
   public ConsentResponse processConsentForm(@NonNull final ConsentForm consentForm) {
     val consentChallenge = consentForm.consentChallenge();
+
+    if (consentForm.isDenied()) {
+      val rejectConsentRequest =
+          RejectConsentRequest.builder()
+              .consentChallenge(consentChallenge)
+              .error("access_denied")
+              .errorDescription("user denied access")
+              .build();
+      val rejectConsentResponse = hydraAdminClient.rejectConsentRequest(rejectConsentRequest);
+      return new Denied(rejectConsentResponse.getRedirectTo());
+    }
 
     val consentRequest = hydraAdminClient.getConsentRequest(consentChallenge);
 

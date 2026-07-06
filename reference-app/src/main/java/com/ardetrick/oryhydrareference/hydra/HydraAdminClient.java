@@ -101,6 +101,20 @@ public class HydraAdminClient {
     }
   }
 
+  public OAuth2RedirectTo rejectConsentRequest(@NonNull RejectConsentRequest rejectConsentRequest) {
+    val rejectOAuth2Request = OryHydraRequestMapper.map(rejectConsentRequest);
+
+    try {
+      return oAuth2Api()
+          .rejectOAuth2ConsentRequest(rejectConsentRequest.consentChallenge(), rejectOAuth2Request);
+    } catch (ApiException e) {
+      switch (e.getCode()) {
+        case 404, 500 -> throw new RuntimeException("code: " + e.getCode(), e); // jsonError
+        default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
+      }
+    }
+  }
+
   @Data
   @org.springframework.context.annotation.Configuration
   @ConfigurationProperties("reference-app.hydra")

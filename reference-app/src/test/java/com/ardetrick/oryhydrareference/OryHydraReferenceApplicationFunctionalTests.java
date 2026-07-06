@@ -367,10 +367,13 @@ public class OryHydraReferenceApplicationFunctionalTests {
     assertThat(page.url()).contains("/client/callback?code=");
   }
 
-  private String getCodeFromCallbackCaptor() {
+  private String getCallbackQueryString() {
     verify(queryStringConsumer).accept(queryStringConsumerArgumentCaptor.capture());
-    val queryStringValue = queryStringConsumerArgumentCaptor.getValue();
-    return Arrays.stream(queryStringValue.split("&"))
+    return queryStringConsumerArgumentCaptor.getValue();
+  }
+
+  private String getCodeFromCallbackCaptor() {
+    return Arrays.stream(getCallbackQueryString().split("&"))
         .filter(queryStringParam -> queryStringParam.startsWith("code="))
         .findFirst()
         .map(queryStringParam -> queryStringParam.replace("code=", ""))
@@ -428,6 +431,39 @@ public class OryHydraReferenceApplicationFunctionalTests {
 
     // Consent screen is not skipped
     assertThat(page.url()).contains("/consent");
+  }
+
+  @Test
+  public void denyConsentRedirectsToClientWithAccessDeniedError() {
+    val screenshotPathProducer =
+        ScreenshotPathProducer.builder()
+            .testName("denyConsentRedirectsToClientWithAccessDeniedError")
+            .build();
+
+    val page = browser.newPage();
+
+    page.navigate(getUriToInitiateFlow().toString());
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+
+    page.locator("input[name=loginEmail]").fill("foo@bar.com");
+    page.locator("input[name=loginPassword]").fill("password");
+
+    page.locator("input[name=submit]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+
+    page.locator("input[id=reject]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-deny"));
+
+    // The browser lands on the client's callback carrying a real OAuth error instead of a code.
+    assertThat(page.url()).contains("/client/callback?error=access_denied");
+
+    val queryString = getCallbackQueryString();
+    assertThat(queryString).contains("error=access_denied");
+    assertThat(queryString).doesNotContain("code=");
   }
 }
 
