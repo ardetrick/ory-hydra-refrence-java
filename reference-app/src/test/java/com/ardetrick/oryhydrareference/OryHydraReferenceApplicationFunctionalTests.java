@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URIBuilder;
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -100,6 +101,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
         OryHydraContainer.builder()
             .urlsLogin("http://localhost:" + springBootAppPort + "/login")
             .urlsConsent("http://localhost:" + springBootAppPort + "/consent")
+            .urlsLogout("http://localhost:" + springBootAppPort + "/logout")
             .urlsSelfIssuer(
                 "http://localhost:" + springBootAppPort + "/integration-test-public-proxy")
             .build();
@@ -510,6 +512,93 @@ public class OryHydraReferenceApplicationFunctionalTests {
     // screen still appears because its remember was unchecked.
     assertThat(page.url()).contains("/consent");
   }
+
+  @Test
+  public void logoutEndsTheRememberedLoginSession() {
+    val screenshotPathProducer =
+        ScreenshotPathProducer.builder().testName("logoutEndsTheRememberedLoginSession").build();
+
+    val page = browser.newPage();
+
+    // First flow: log in with remember-me so a durable login session exists.
+    completeFullFlowWithLoginRemember(page, screenshotPathProducer);
+
+    // Second flow: no credentials needed — proof the session is live before logging out.
+    page.navigate(getUriToInitiateFlow().toString());
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("second-flow-skips-login"));
+    assertThat(page.url()).doesNotContain("/login");
+
+    // RP-initiated logout: Hydra redirects to this app's logout endpoint with a challenge.
+    page.navigate(oryHydraContainer.publicBaseUriString() + "/oauth2/sessions/logout");
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("logout-confirmation"));
+    assertThat(page.url()).contains("/logout?logout_challenge=");
+
+    page.locator("input[id=confirm]").click();
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-logout-confirm"));
+    assertThat(page.url()).contains("/oauth2/fallbacks/logout");
+
+    // Third flow: the session is gone, so the login screen is back.
+    page.navigate(getUriToInitiateFlow().toString());
+    page.waitForLoadState();
+    page.screenshot(
+        screenshotPathProducer.screenshotOptionsForStepName("flow-after-logout-requires-login"));
+    assertThat(page.url()).contains("/login");
+  }
+
+  @Test
+  public void cancellingLogoutKeepsTheSessionAlive() {
+    val screenshotPathProducer =
+        ScreenshotPathProducer.builder().testName("cancellingLogoutKeepsTheSessionAlive").build();
+
+    val page = browser.newPage();
+
+    completeFullFlowWithLoginRemember(page, screenshotPathProducer);
+
+    page.navigate(oryHydraContainer.publicBaseUriString() + "/oauth2/sessions/logout");
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("logout-confirmation"));
+
+    page.locator("input[id=cancel]").click();
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-logout-cancel"));
+
+    // The session survives a cancelled logout: the next flow still skips the login screen.
+    page.navigate(getUriToInitiateFlow().toString());
+    page.waitForLoadState();
+    page.screenshot(
+        screenshotPathProducer.screenshotOptionsForStepName("flow-after-cancel-skips-login"));
+    assertThat(page.url()).doesNotContain("/login");
+  }
+
+  /**
+   * Runs one full authorization-code flow with login remember-me checked, ending at the client
+   * callback with the code exchanged.
+   */
+  private void completeFullFlowWithLoginRemember(
+      Page page, ScreenshotPathProducer screenshotPathProducer) {
+    page.navigate(getUriToInitiateFlow().toString());
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+
+    page.locator("input[name=loginEmail]").fill("foo@bar.com");
+    page.locator("input[name=loginPassword]").fill("password");
+    page.locator("input[id=remember]").check();
+
+    page.locator("input[name=submit]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+
+    page.locator("input[id=accept]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+
+    val code = getCodeFromCallbackCaptor();
+    exchangeCode(code);
+  }
 }
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -541,6 +630,23 @@ class ForwardingController {
   @GetMapping("oauth2/auth")
   public RedirectView oauth2Auth() {
     val redirectView = new RedirectView(hydraPublicBaseUri + "/oauth2/auth");
+    redirectView.setPropagateQueryParams(true);
+    return redirectView;
+  }
+
+  // The logout accept's redirect_to (carrying the logout_verifier) and the post-logout
+  // fallback are both issuer-based URLs, so they arrive here and forward to Hydra like
+  // the authorize endpoint above.
+  @GetMapping("oauth2/sessions/logout")
+  public RedirectView oauth2SessionsLogout() {
+    val redirectView = new RedirectView(hydraPublicBaseUri + "/oauth2/sessions/logout");
+    redirectView.setPropagateQueryParams(true);
+    return redirectView;
+  }
+
+  @GetMapping("oauth2/fallbacks/logout")
+  public RedirectView oauth2FallbacksLogout() {
+    val redirectView = new RedirectView(hydraPublicBaseUri + "/oauth2/fallbacks/logout");
     redirectView.setPropagateQueryParams(true);
     return redirectView;
   }

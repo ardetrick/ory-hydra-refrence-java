@@ -359,6 +359,6 @@ instead, use a Gradle composite build:
 - [ ] Document playwright usage
 - [ ] Show login errors on login screen
 - [ ] Add playwright traces https://playwright.dev/java/docs/trace-viewer-intro
-- [ ] Log out
+- [x] Log out
 - [ ] Add example with Ory Cloud
 
