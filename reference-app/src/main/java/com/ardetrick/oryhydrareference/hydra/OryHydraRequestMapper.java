@@ -3,11 +3,23 @@ package com.ardetrick.oryhydrareference.hydra;
 import lombok.NonNull;
 import sh.ory.hydra.model.AcceptOAuth2ConsentRequest;
 import sh.ory.hydra.model.AcceptOAuth2ConsentRequestSession;
+import sh.ory.hydra.model.AcceptOAuth2LoginRequest;
 import sh.ory.hydra.model.RejectOAuth2Request;
 
 public class OryHydraRequestMapper {
 
   private static final Long DEFAULT_SESSION_EXPIRATION_IN_SECONDS = 3600L;
+
+  public static AcceptOAuth2LoginRequest map(@NonNull final AcceptLoginRequest acceptLoginRequest) {
+    // The subject becomes the `sub` claim in every token Hydra issues — it is the stable, unique
+    // identifier for the end user. Any string works, but it should never change or be reassigned.
+    // This demo uses the login email for readability; a production login app should prefer an
+    // immutable internal user ID (emails change and get recycled).
+    return new AcceptOAuth2LoginRequest()
+        .subject(acceptLoginRequest.subject())
+        .remember(acceptLoginRequest.remember())
+        .rememberFor(DEFAULT_SESSION_EXPIRATION_IN_SECONDS);
+  }
 
   public static AcceptOAuth2ConsentRequest map(
       @NonNull final AcceptConsentRequest acceptConsentRequest) {

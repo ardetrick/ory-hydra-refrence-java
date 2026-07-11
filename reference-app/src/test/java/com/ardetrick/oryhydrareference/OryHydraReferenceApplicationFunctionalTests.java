@@ -464,6 +464,52 @@ public class OryHydraReferenceApplicationFunctionalTests {
     assertThat(queryString).contains("error=access_denied");
     assertThat(queryString).doesNotContain("code=");
   }
+
+  @Test
+  public void skipLoginScreenOnSecondFlowWhenLoginRememberMeIsUsed() {
+    val screenshotPathProducer =
+        ScreenshotPathProducer.builder()
+            .testName("skipLoginScreenOnSecondFlowWhenLoginRememberMeIsUsed")
+            .build();
+
+    val page = browser.newPage();
+
+    page.navigate(getUriToInitiateFlow().toString());
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
+
+    page.locator("input[name=loginEmail]").fill("foo@bar.com");
+    page.locator("input[name=loginPassword]").fill("password");
+    page.locator("input[id=remember]").check();
+
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-check-remember"));
+
+    page.locator("input[name=submit]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-login-submit"));
+
+    // Uncheck the consent-side remember so the second flow isolates the login skip: consent must
+    // be asked again, proving the login screen alone was skipped.
+    page.locator("input[id=remember]").uncheck();
+
+    page.locator("input[id=accept]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("after-consent-submit"));
+
+    val code = getCodeFromCallbackCaptor();
+    exchangeCode(code);
+
+    page.navigate(getUriToInitiateFlow().toString());
+
+    page.waitForLoadState();
+    page.screenshot(
+        screenshotPathProducer.screenshotOptionsForStepName("initial-load-second-time"));
+
+    // The login screen is skipped — no credentials were entered this time — but the consent
+    // screen still appears because its remember was unchecked.
+    assertThat(page.url()).contains("/consent");
+  }
 }
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
