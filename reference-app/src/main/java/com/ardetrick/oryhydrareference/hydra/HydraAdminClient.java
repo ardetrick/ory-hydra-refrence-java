@@ -113,6 +113,44 @@ public class HydraAdminClient {
     }
   }
 
+  public Optional<OAuth2LogoutRequest> getLogoutRequest(@NonNull String logoutChallenge) {
+    try {
+      return Optional.of(oAuth2Api().getOAuth2LogoutRequest(logoutChallenge));
+    } catch (ApiException e) {
+      return switch (e.getCode()) {
+        case 410 -> Optional.empty(); // requestWasHandledResponse
+        case 404 -> Optional.empty(); // jsonError
+        default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
+      };
+    }
+  }
+
+  public OAuth2RedirectTo acceptLogoutRequest(@NonNull String logoutChallenge) {
+    try {
+      return oAuth2Api().acceptOAuth2LogoutRequest(logoutChallenge);
+    } catch (ApiException e) {
+      switch (e.getCode()) {
+        case 404, 500 -> throw new RuntimeException("code: " + e.getCode(), e); // jsonError
+        default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
+      }
+    }
+  }
+
+  /**
+   * Unlike a rejected login or consent, a rejected logout has no redirect: Hydra returns 204 and
+   * the session stays alive. Where to send the user afterwards is this app's choice.
+   */
+  public void rejectLogoutRequest(@NonNull String logoutChallenge) {
+    try {
+      oAuth2Api().rejectOAuth2LogoutRequest(logoutChallenge);
+    } catch (ApiException e) {
+      switch (e.getCode()) {
+        case 404, 500 -> throw new RuntimeException("code: " + e.getCode(), e); // jsonError
+        default -> throw new RuntimeException("unhandled code: " + e.getCode(), e);
+      }
+    }
+  }
+
   @Data
   @org.springframework.context.annotation.Configuration
   @ConfigurationProperties("reference-app.hydra")

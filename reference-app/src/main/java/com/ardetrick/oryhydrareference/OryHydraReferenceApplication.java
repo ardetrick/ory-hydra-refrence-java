@@ -18,7 +18,12 @@ public class OryHydraReferenceApplication {
   SecurityFilterChain securityFilterChain(HttpSecurity http) {
     // Don't do this in production. This was removed to simplify this reference implementation.
     http.csrf(AbstractHttpConfigurer::disable)
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+        // Spring Security's built-in LogoutFilter intercepts /logout before it can reach any
+        // controller (with CSRF disabled, even on GET) and redirects to its own /login?logout.
+        // This app's /logout is Hydra's logout challenge endpoint, not an app-session logout,
+        // so the filter must be disabled for LogoutController to receive the request.
+        .logout(AbstractHttpConfigurer::disable);
     return http.build();
   }
 }
