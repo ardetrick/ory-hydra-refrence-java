@@ -38,3 +38,5 @@ out/
 
 ### MacOS ###
 .DS_Store
+# Local agent scratch/worktrees
+.claude/

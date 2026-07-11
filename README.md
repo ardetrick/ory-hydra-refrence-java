@@ -39,7 +39,7 @@ Whatever you choose, do not write the oauth endpoints yourself!
 - Java 21
     - required by the SpringBoot plugin at build time
     - Gradle tool chain is used to compile and run tests
-- Docker (only required for running tests)
+- Docker (required for running tests and for `./gradlew bootTestRun`)
 - jq (used for some demos, not a hard dependency)
 
 ## Technologies Used
@@ -56,6 +56,52 @@ Whatever you choose, do not write the oauth endpoints yourself!
 
 ## Running
 
+### Running Locally
+
+One command starts the app together with a real Ory Hydra container and a pre-registered demo
+client (Docker must be running):
+
+```
+./gradlew bootTestRun
+```
+
+Then open http://localhost:8080 and click "Start the OAuth flow". The credentials are
+`foo@bar.com` / `password`; the flow ends on a page that exchanges the authorization code for
+real tokens. Hydra runs on its default ports (public 4444, admin 4445), the same
+single-container setup the functional tests use via
+[testcontainers-ory-hydra](https://github.com/ardetrick/testcontainers-ory-hydra) — see
+`TestOryHydraReferenceApplication` for how the container is configured and the demo client is
+seeded. Ports 4444, 4445, and 8080 must be free.
+
+### Running With Your Own Ory Hydra
+
+To run the app against a Hydra you manage yourself, configure your Hydra with the app's
+endpoints as the login, consent, and logout URLs (`URLS_LOGIN=http://localhost:8080/login`,
+and likewise `/consent` and `/logout`), then start the app with `./gradlew bootRun`. If your
+Hydra's admin API is not at the default `http://localhost:4445`, point the app at it with the
+`reference-app.hydra.base-path` property. This path starts with whatever OAuth2 clients your
+Hydra already has — the landing page at http://localhost:8080 lists them and includes
+instructions for creating one. To see each step of the flow and token exchange as raw terminal
+commands, see
+[walking the authorization code flow by hand](docs/manual-token-exchange.md).
+
+<details>
+<summary>Example: a minimal disposable Hydra via docker run</summary>
+
+```
+docker run --rm --name hydra \
+  -p 4444:4444 -p 4445:4445 \
+  -e DSN="sqlite:///tmp/db.sqlite?_fk=true" \
+  -e SECRETS_SYSTEM=local-dev-secret \
+  -e URLS_LOGIN=http://localhost:8080/login \
+  -e URLS_CONSENT=http://localhost:8080/consent \
+  -e URLS_LOGOUT=http://localhost:8080/logout \
+  --entrypoint sh oryd/hydra:v25.4.0 \
+  -c "hydra migrate sql -e --yes && hydra serve all --dev"
+```
+
+</details>
+
 ### Running Functional Tests
 
 The functional tests for this project run along all other tests with the standard gradle command.
@@ -67,6 +113,9 @@ The functional tests for this project run along all other tests with the standar
 The functional tests are unique because there is practically no mocking. This makes for a slightly more complicated
 setup, but it allows us to reproduce scenarios in a context very similar to what would be seen in production, all the
 way from interacting with the UI back to Ory Hydra.
+
+<details>
+<summary>How the test rig works</summary>
 
 1. Using `@SpringBootTest`, the application is started on a random port. Note that the application also configures two
    extra controllers to help facilitate testing.
@@ -92,99 +141,7 @@ Since the token flow of OAuth is inherently UI driven, it is imperative that the
 with this the `Playwright` framework is used. It allows us to use a headless driver to load the UI and use HTML
 selectors to interact with the loaded page just like a human would.
 
-### Running With Local Ory Hydra
-
-Running the application and Ory Hydra locally is a useful way to manually interact with the application. Use the
-following commands to start Hydra, start the reference application, create a client, exchange a token.
-
-Note: All steps require Docker and some require `jq`. All commands should run relative to the root of this repo.
-
-#### Start Hydra And The Reference App
-
-```
-# Start Hydra with an in-container SQLite database, running the migrations first —
-# the same single-container setup the functional tests get from testcontainers-ory-hydra.
-docker run --rm --name hydra \
-  -p 4444:4444 -p 4445:4445 \
-  -e DSN="sqlite:///tmp/db.sqlite?_fk=true" \
-  -e SECRETS_SYSTEM=local-dev-secret \
-  -e URLS_LOGIN=http://localhost:8080/login \
-  -e URLS_CONSENT=http://localhost:8080/consent \
-  --entrypoint sh oryd/hydra:v25.4.0 \
-  -c "hydra migrate sql -e --yes && hydra serve all --dev"
-
-# At this point Hydra urls such as http://localhost:4445/admin/clients should be up and running.
-
-# Open a new terminal...
-
-# Start the Spring app.
-./gradlew bootRun
-
-# At this point the reference app pages such as localhost:8080/index.html should load.
-```
-
-#### Demo App
-
-Once both the app and Hydra are started, visit http://localhost:8080/demo for instructions on how interactively demo
-the application. This is a more user-friendly approach than the subsequent testing instructions.
-
-#### Create A New Client And Test Via Terminal
-
-There may be existing clients you can use, visit to see http://localhost:4445/admin/clients.
-Otherwise, follow these instructions to create a client and test it by going through the oauth flow.
-
-```
-# Create a client. Uses the Hydra container to access the Hydra CLI.
-hydra_client=$(docker exec hydra \
-    hydra create client \
-    --endpoint http://127.0.0.1:4445 \
-    --grant-type authorization_code,refresh_token \
-    --response-type code,id_token \
-    --format json \
-    --secret omit-for-random-secret-1 \
-    --scope openid --scope offline \
-    --redirect-uri http://127.0.0.1:5555/callback
-)
-
-# Put the client ID and client secret values into env variables for later use.
-hydra_client_id=$(echo $hydra_client | jq -r '.client_id')
-hydra_client_secret=$(echo $hydra_client | jq -r '.client_secret')
-hydra_client_redirect_uri_0=$(echo $hydra_client | jq -r '.redirect_uris[0]')
-
-# Update the client to avoid some issues with the Java SDK.
-curl -X PATCH \
-  http://localhost:4445/admin/clients/$hydra_client_id \
-  --data-binary @patch_client_body.json
-
-# Open a new terminal.
-
-# Build the endpoint to initiate the OAuth flow
-oauth_endpoint="http://localhost:4444/oauth2/auth?\
-client_id=${hydra_client_id}&\
-response_type=code&\
-redirect_uri=${hydra_client_redirect_uri_0}&\
-scope=openid+offline&\
-state=123456789"
-
-# Print the endpoint.
-echo $oauth_endpoint
-
-# Click on the printed endpoint (or paste it into a browser).
-# Complete the OAuth flow (by default the hard coded credentials are username: foo@bar.com password: password).
-
-# replace '...' with the `code` query param in the call back.
-code=... 
-
-# Exchange the authorization code for an access token
-curl -X POST \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -H "authorization: basic $(echo -n "${hydra_client_id}:${hydra_client_secret}" | base64)" \
-  -d "grant_type=authorization_code" \
-  -d "code=${code}" \
-  -d "redirect_uri=http%3A%2F%2F127.0.0.1%3A5555%2Fcallback" \
-  -d "client_id=${hydra_client_id}" \
-  http://127.0.0.1:4444/oauth2/token
-```
+</details>
 
 ## OAuth 2.0 Authorization Code Grant Flow
 

@@ -157,5 +157,8 @@ public class HydraAdminClient {
   public static class Properties {
 
     String basePath = "http://localhost:4445";
+
+    // Hydra's public API, used by the demo pages to build authorize links and exchange codes.
+    String publicBasePath = "http://localhost:4444";
   }
 }
