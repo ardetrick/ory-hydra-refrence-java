@@ -11,8 +11,10 @@ public class OryHydraRequestMapper {
   private static final Long DEFAULT_SESSION_EXPIRATION_IN_SECONDS = 3600L;
 
   public static AcceptOAuth2LoginRequest map(@NonNull final AcceptLoginRequest acceptLoginRequest) {
-    // Subject is an alias for user ID. A subject can be a random string, a UUID, an email
-    // address, ...
+    // The subject becomes the `sub` claim in every token Hydra issues — it is the stable, unique
+    // identifier for the end user. Any string works, but it should never change or be reassigned.
+    // This demo uses the login email for readability; a production login app should prefer an
+    // immutable internal user ID (emails change and get recycled).
     return new AcceptOAuth2LoginRequest()
         .subject(acceptLoginRequest.subject())
         .remember(acceptLoginRequest.remember())
