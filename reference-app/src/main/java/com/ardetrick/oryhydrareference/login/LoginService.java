@@ -32,9 +32,13 @@ public class LoginService {
     val loginRequest = maybeLoginRequest.get();
 
     if (loginRequest.getSkip()) {
-      // The session is already remembered, so there is nothing new to remember. Follow the
-      // accept response's redirect (redirecting back to the original request URL would replay
-      // the authorization request and loop straight back here).
+      // skip=true means Hydra recognized an existing remembered login session (only a prior
+      // accept with remember=true creates one), so accept without showing the login UI.
+      // remember=false does not end that session — it declines to extend it, matching Ory's
+      // reference implementation; sliding-session behavior is available via
+      // extend_session_lifespan=true instead. Follow the accept response's redirect:
+      // redirecting back to the original request URL would replay the authorization request
+      // and loop straight back here.
       val completedRequest =
           hydraAdminClient.acceptLoginRequest(
               AcceptLoginRequest.builder()

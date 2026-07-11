@@ -4,8 +4,9 @@ public record LoginForm(
     String loginEmail, String loginPassword, String loginChallenge, Boolean remember) {
 
   /**
-   * This field is implemented in HTML as a checkbox. When a checkbox element is not checked in a
-   * form it is not submitted in the form at all. This provides a useful null safe getter.
+   * Unchecked HTML checkboxes are omitted from the form post entirely — there is no {@code
+   * remember=false} — so Spring binds this as {@code null} when the box is unchecked. The boxed
+   * {@code Boolean} and this getter exist to absorb that.
    */
   public boolean isRemember() {
     if (remember == null) {
