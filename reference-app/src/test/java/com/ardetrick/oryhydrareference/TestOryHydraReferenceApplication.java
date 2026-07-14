@@ -2,8 +2,11 @@ package com.ardetrick.oryhydrareference;
 
 import com.ardetrick.testcontainers.OryHydraContainer;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -11,8 +14,8 @@ import org.springframework.context.annotation.Bean;
  * seeded demo client, so running locally is one command with nothing to install but Docker.
  *
  * <p>Run {@code ./gradlew bootTestRun}, then open <a
- * href="http://localhost:8080/demo">http://localhost:8080/demo</a> and log in with {@code
- * foo@bar.com} / {@code password}.
+ * href="http://localhost:8080">http://localhost:8080</a> and log in with {@code foo@bar.com} /
+ * {@code password}.
  */
 public class TestOryHydraReferenceApplication {
 
@@ -22,8 +25,19 @@ public class TestOryHydraReferenceApplication {
         .run(args);
   }
 
+  @Slf4j
   @TestConfiguration(proxyBeanMethods = false)
   static class LocalHydraConfiguration {
+
+    // End the startup logs with the link to click — the convention of one-command dev servers.
+    // Dev-time only: the production app cannot know its public URL, but this configuration
+    // already pins every port, so it can.
+    @Bean
+    ApplicationListener<ApplicationReadyEvent> readyMessage() {
+      return event ->
+          log.info(
+              "Demo ready — open http://localhost:8080 and log in with foo@bar.com / password");
+    }
 
     // Hydra's host ports are pinned to the image defaults here, so Hydra's dev-mode issuer
     // (http://localhost:4444), the app's default admin base path (http://localhost:4445), and
