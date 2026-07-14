@@ -112,6 +112,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
     // two different endpoints: the app's HydraAdminClient speaks the admin API, while the
     // test's public proxy forwards browsers to the public authorize endpoint.
     properties.setBasePath(oryHydraContainer.adminBaseUriString());
+    // The landing page and demo callback build public-endpoint URLs from this property.
+    properties.setPublicBasePath(oryHydraContainer.publicBaseUriString());
     forwardingController.hydraPublicBaseUri = oryHydraContainer.publicBaseUriString();
   }
 
@@ -571,6 +573,59 @@ public class OryHydraReferenceApplicationFunctionalTests {
     page.screenshot(
         screenshotPathProducer.screenshotOptionsForStepName("flow-after-cancel-skips-login"));
     assertThat(page.url()).doesNotContain("/login");
+  }
+
+  @Test
+  public void quickStartFromLandingPageExchangesTokensInBrowser() {
+    val screenshotPathProducer =
+        ScreenshotPathProducer.builder()
+            .testName("quickStartFromLandingPageExchangesTokensInBrowser")
+            .build();
+
+    // Re-register this test's client to redirect to the app's own demo callback page, the
+    // configuration the landing page's quick start is built around.
+    val appCallback = "http://localhost:" + springBootAppPort + "/callback";
+    oryHydraContainer.createOrReplaceClient(
+        client ->
+            client
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .redirectUris(appCallback)
+                .grantTypes("authorization_code", "refresh_token")
+                .responseTypes("code", "id_token")
+                .scope("offline_access", "openid", "offline", "profile"));
+
+    val page = browser.newPage();
+
+    page.navigate("http://localhost:" + springBootAppPort + "/");
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("landing-page"));
+
+    page.locator("a[data-testid='start-" + clientId + "']").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("login"));
+
+    page.locator("input[name=loginEmail]").fill("foo@bar.com");
+    page.locator("input[name=loginPassword]").fill("password");
+    page.locator("input[name=submit]").click();
+
+    page.waitForLoadState();
+    page.locator("input[id=accept]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("callback-page"));
+    assertThat(page.url()).contains("/callback?code=");
+
+    // The form pre-fills the seeded demo client's values; this test's client is unique, so
+    // overwrite them.
+    page.locator("input[id=clientId]").fill(clientId);
+    page.locator("input[id=clientSecret]").fill(clientSecret);
+    page.locator("input[id=exchange]").click();
+
+    page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("tokens"));
+    assertThat(page.content()).contains("access_token");
+    assertThat(page.content()).contains("exampleCustomClaimKey");
   }
 
   /**

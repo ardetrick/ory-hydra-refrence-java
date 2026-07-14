@@ -32,7 +32,7 @@ public class LoginModelAndViewMapper {
 
         yield loginModelAndView;
       }
-      case LoginRequestNotFound ignored -> new ModelAndView("/home");
+      case LoginRequestNotFound ignored -> ModelAndViewUtils.redirectToDifferentContext("/");
     };
   }
 }

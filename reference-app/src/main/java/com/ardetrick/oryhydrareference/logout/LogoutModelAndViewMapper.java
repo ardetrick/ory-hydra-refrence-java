@@ -20,8 +20,8 @@ public class LogoutModelAndViewMapper {
               .addObject("subject", r.subject());
       case LogoutAcceptedFollowRedirect r ->
           ModelAndViewUtils.redirectToDifferentContext(r.redirectUrl());
-      case LogoutCancelledReturnHome ignored -> new ModelAndView("/home");
-      case LogoutRequestNotFound ignored -> new ModelAndView("/home");
+      case LogoutCancelledReturnHome ignored -> ModelAndViewUtils.redirectToDifferentContext("/");
+      case LogoutRequestNotFound ignored -> ModelAndViewUtils.redirectToDifferentContext("/");
     };
   }
 }
