@@ -123,6 +123,12 @@ public class OryHydraReferenceApplicationFunctionalTests {
     oryHydraContainer.stop();
   }
 
+  // Every screenshot these tests capture is destined for the docs, so the viewport is pinned
+  // rather than left at Playwright's default — a Playwright upgrade must not resize the images.
+  private Page newPage() {
+    return browser.newPage(new Browser.NewPageOptions().setViewportSize(1280, 720));
+  }
+
   @BeforeEach
   public void registerTestClient() {
     // A unique client per test keeps tests isolated on the shared container: Hydra remembers
@@ -164,7 +170,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     val screenshotPathProducer =
         ScreenshotPathProducer.builder().testName("loginInvalidCredentials").build();
 
-    val page = browser.newPage();
+    val page = newPage();
     val initiateFlowUri = getUriToInitiateFlow();
 
     page.navigate(initiateFlowUri.toString());
@@ -200,7 +206,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     val screenshotPathProducer =
         ScreenshotPathProducer.builder().testName("completeFullOAuthFlowUsingUIToLogin").build();
 
-    val page = browser.newPage();
+    val page = newPage();
 
     val uri = getUriToInitiateFlow();
 
@@ -240,7 +246,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     val screenshotPathProducer =
         ScreenshotPathProducer.builder().testName("completeFlowWithPartialScopeSelection").build();
 
-    val page = browser.newPage();
+    val page = newPage();
 
     val uri = getUriToInitiateFlow();
 
@@ -327,7 +333,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
         ScreenshotPathProducer.builder()
             .testName("skipConsentScreenOnSecondLoginWhenRememberMeIsUsed")
             .build();
-    val page = browser.newPage();
+    val page = newPage();
 
     val uri = getUriToInitiateFlow();
 
@@ -390,7 +396,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
             .testName("doNotSkipConsentScreenOnSecondLoginWhenRememberMeIsFalse")
             .build();
 
-    val page = browser.newPage();
+    val page = newPage();
 
     val uri = getUriToInitiateFlow();
 
@@ -443,7 +449,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
             .testName("denyConsentRedirectsToClientWithAccessDeniedError")
             .build();
 
-    val page = browser.newPage();
+    val page = newPage();
 
     page.navigate(getUriToInitiateFlow().toString());
     page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
@@ -476,7 +482,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
             .testName("skipLoginScreenOnSecondFlowWhenLoginRememberMeIsUsed")
             .build();
 
-    val page = browser.newPage();
+    val page = newPage();
 
     page.navigate(getUriToInitiateFlow().toString());
     page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("initial-load"));
@@ -520,7 +526,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     val screenshotPathProducer =
         ScreenshotPathProducer.builder().testName("logoutEndsTheRememberedLoginSession").build();
 
-    val page = browser.newPage();
+    val page = newPage();
 
     // First flow: log in with remember-me so a durable login session exists.
     completeFullFlowWithLoginRemember(page, screenshotPathProducer);
@@ -555,7 +561,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     val screenshotPathProducer =
         ScreenshotPathProducer.builder().testName("cancellingLogoutKeepsTheSessionAlive").build();
 
-    val page = browser.newPage();
+    val page = newPage();
 
     completeFullFlowWithLoginRemember(page, screenshotPathProducer);
 
@@ -595,7 +601,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
                 .responseTypes("code", "id_token")
                 .scope("offline_access", "openid", "offline", "profile"));
 
-    val page = browser.newPage();
+    val page = newPage();
 
     page.navigate("http://localhost:" + springBootAppPort + "/");
     page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("landing-page"));
