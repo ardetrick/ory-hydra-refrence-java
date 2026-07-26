@@ -608,8 +608,6 @@ public class OryHydraReferenceApplicationFunctionalTests {
     val page = newPage();
 
     page.navigate("http://localhost:" + springBootAppPort + "/");
-    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("landing-page"));
-
     page.locator("a[data-testid='start-" + clientId + "']").click();
 
     page.waitForLoadState();
@@ -620,6 +618,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
     page.locator("input[name=submit]").click();
 
     page.waitForLoadState();
+    page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("consent"));
     page.locator("input[id=accept]").click();
 
     page.waitForLoadState();
