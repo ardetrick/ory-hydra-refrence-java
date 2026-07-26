@@ -242,50 +242,27 @@ verified with the
 above
 jwk [like this](https://jwt.io/#debugger-io?token=eyJhbGciOiJSUzI1NiIsImtpZCI6ImI2ZDMzYmYxLTU5ZDUtNGFiZi05NjQ2LWQxZjMyMTY3NWYyYiIsInR5cCI6IkpXVCJ9.eyJhdF9oYXNoIjoibWNIOEZpUzR6a3dJLTR0Wlpib3c4dyIsImF1ZCI6WyJhYzg0NGM0OC1iZjNkLTRlODEtODdhYS03YmNmNzRkYzA5MmMiXSwiYXV0aF90aW1lIjoxNjcxOTM5NzMyLCJleGFtcGxlQ3VzdG9tQ2xhaW1LZXkiOiJleGFtcGxlIGN1c3RvbSBjbGFpbSB2YWx1ZSIsImV4cCI6MTY3MTk0MzMzMywiaWF0IjoxNjcxOTM5NzMzLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjU5MDI5L2ludGVncmF0aW9uLXRlc3QtcHVibGljLXByb3h5IiwianRpIjoiNTdlNmE1YjctYmY2Yy00NGM0LWE4YjMtNWM0ZGI1NWRhNzJjIiwicmF0IjoxNjcxOTM5NzMxLCJzaWQiOiJiMWVmNDlhYy1mNDJiLTQ1N2UtYjNlMS0yOTVhOTFhYWVmYzkiLCJzdWIiOiJmb29AYmFyLmNvbSJ9.ZRCh1sjNBIe8N_XZm97JeOpJN-T4zB3M8-PH_B-9k3cNLK3u9Ku0nBXTxQ99idrlrxyWQPT7qQK5dAzBis3M2SJ36sWq5BMjGi7bq_nU_Cj_1hzo1HTcdHXkh9iMH4zyBeQPz8BTVGgVE3rSd3tsCOMiwub7Wp3sQKDSHkCkSs6zZcsCCJS9AVQym4ltJyayYJ2lXUg7XMzuFWeyAhuVrusY8wXDv4NRIZOM6ymtHOTxe9UUVKgO8sCnUAVLqz_w2aQIYRy-u-BpT09uEalqTo27rKrUZhHjOd3LgGGVVSGp5_RM_wpK4zkiA0G7CEpU39t0ib6Ix7VWxquGWKaLIA2YqKn3ZGkTdGlByPx5N8ubPtaOxzmlgafbNTjmXxBMXU03hUXCiSaZefBZFB9jiE92-6ZKKvAFqAoaMVWp6QF4wXx3LzQzBr_EBDdH0CwhUmt_rhThj0rp_VVgQ3yr0TV7UAQGaZEO-kMJblMUjhxhK7ZMBlFXC2g7pt9zuvXhdX32QOJQ-xc20vA_RX-Kkp-Nkv3JmNCSsf-jxfwECOr_mKN7_uj7MiPK6_6zUQyrfOMKRHZcJoTlSqZylCaRn1CDxnN-1aTQ_RTplC_E27KD2TYykqc-aUGr0vkRnOGfezP3vFGNvofTfCnzZcgNJs_yTSCim1nkD5CKZEjyIhQ&publicKey=%7B%0A%20%20%20%20%20%20%22use%22%3A%20%22sig%22%2C%0A%20%20%20%20%20%20%22kty%22%3A%20%22RSA%22%2C%0A%20%20%20%20%20%20%22kid%22%3A%20%22b6d33bf1-59d5-4abf-9646-d1f321675f2b%22%2C%0A%20%20%20%20%20%20%22alg%22%3A%20%22RS256%22%2C%0A%20%20%20%20%20%20%22n%22%3A%20%22yFM_NznB3GdBMNJI9YGBmzGRBx3qkTzBfReOOq2DXRBNCkoZZOMSlfv-qqruo-pfbaLwPoz2pww81h9R2hcpoZUbaLb5R3rHOmIYftjiorjzjiLnFlndY5rq3foLxZxcZ6dYBDyS3qzZgf8hUs3CH__kG4MNAAD1Hoj8pER-_jFsAyVLBXpNrIy2aiuUscnFuOtK06LbfX0OjasKSKnx_IGXMje_uA2xziA5AUy5sm4wHWhcFWNCHNH5IgP-AHmg19lm7Swd_OlFfhxg43A7AfypV4-OdBb4qhReEgNr6Fnl761gELYfgDxGZXh6o3vs-V6s4g3fMGNGk4JYHFkkCvlclAg9XaprWKFbnhA8-elqqKWNIShf32uTcajf9rMWh_4M-mLiOPDTaJsZg0_f1z-MyE2_MDe-aRURYVY7tlQYF5MnY-Hg5uxn1QEghezclPe5YWUOtI39u__DgA6X1bgQlE5n4SmvyBTuFScxTEqsidwSiIY5hJh0ek60ds16V3I-XafQ9I6JmQ1TRHxdJfpAxYH5CbroSn7lRA-Tlqd-iaJ3ZHTIBuPUa2kZGwSE8zkFPyd803FhqM-cJTtoDIS0piNd8tn6d_-KJ62jWxJeyCWiOqMvTLHdobz0p9u181l2DU7qR07J1g4qtG0pPQfs6931hLZrG6gXsd2CYfs%22%2C%0A%20%20%20%20%20%20%22e%22%3A%20%22AQAB%22%0A%20%20%20%20%7D).
 
-## Example Flows
+## See it work
 
-### Full OAuth Flow With OIDC
+A walk through the authorization code flow with OpenID Connect, from login to real
+tokens. Run `./gradlew bootTestRun` and open http://localhost:8080 to click through it
+yourself.
 
-A visual guide of walking through the flow from login to code.
+Log in (the demo credentials are pre-filled):
 
-First step is to log in.
+![login screen](docs/images/authorization-code-flow/1-login.png)
 
-![login screen](docs/images/full-oauth-flow-oidc/1-initial-load.png)
+Authorize the scopes the application is requesting:
 
-Then scopes are requested.
+![consent screen](docs/images/authorization-code-flow/2-consent.png)
 
-![requested scopes screen](docs/images/full-oauth-flow-oidc/2-after-login-submit.png)
+Hydra redirects back with an authorization code, which the app exchanges for tokens:
 
-Finally, the browser is redirected to the client where the code can be exchanged.
+![callback screen](docs/images/authorization-code-flow/3-callback-page.png)
 
-![code sent to client](docs/images/full-oauth-flow-oidc/3-after-consent-submit.png)
+The result is a real access token, ID token, and refresh token from Hydra:
 
-After exchanging the code the client will have a JWT (not pictured).
-
-### Use 'Remember Me' To Skip Consent Screen
-
-Demonstrates the impact of the "remember me" functionality. On first iteration of login, the scope screen is displayed.
-On the second attempt to login (requesting the same set of scopes in the oauth url) that UI step is skipped.
-
-Login:
-
-![login](docs/images/remember-me/1-initial-load.png)
-
-Select scopes:
-
-![select scopes](docs/images/remember-me/2-after-login-submit.png)
-
-Get token:
-
-![get token](docs/images/remember-me/3-after-consent-submit.png)
-
-Login again:
-
-![login again](docs/images/remember-me/4-initial-load-second-time.png)
-
-Get token (no scopes screen):
-
-![get token](docs/images/remember-me/5-after-login-submit-second-time.png)
+![token response](docs/images/authorization-code-flow/4-tokens.png)
 
 ## Building against a different testcontainers-ory-hydra version
 

@@ -53,8 +53,7 @@ tasks.withType<JavaCompile> {
 // values the producing test's screenshot directory under build/test-results/screenshots.
 val readmeScreenshotFlows =
     mapOf(
-        "full-oauth-flow-oidc" to "completeFullOAuthFlowUsingUIToLogin",
-        "remember-me" to "skipConsentScreenOnSecondLoginWhenRememberMeIsUsed",
+        "authorization-code-flow" to "quickStartFromLandingPageExchangesTokensInBrowser",
     )
 
 tasks.register("refreshReadmeScreenshots") {
