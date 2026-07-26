@@ -244,25 +244,32 @@ jwk [like this](https://jwt.io/#debugger-io?token=eyJhbGciOiJSUzI1NiIsImtpZCI6Im
 
 ## See it work
 
-A walk through the authorization code flow with OpenID Connect, from login to real
-tokens. Run `./gradlew bootTestRun` and open http://localhost:8080 to click through it
-yourself.
-
-Log in (the demo credentials are pre-filled):
-
-![login screen](docs/images/authorization-code-flow/1-login.png)
-
-Authorize the scopes the application is requesting:
+Log in, authorize the requested scopes, and the app exchanges the authorization code for
+real tokens from Hydra. Run `./gradlew bootTestRun` and open http://localhost:8080 to
+click through it yourself.
 
 ![consent screen](docs/images/authorization-code-flow/2-consent.png)
 
-Hydra redirects back with an authorization code, which the app exchanges for tokens:
+<details>
+<summary>See the full flow, step by step</summary>
+
+Log in — the demo credentials are pre-filled.
+
+![login screen](docs/images/authorization-code-flow/1-login.png)
+
+Authorize the scopes the application is requesting.
+
+![consent screen](docs/images/authorization-code-flow/2-consent.png)
+
+Hydra redirects back with an authorization code, which the app exchanges for tokens.
 
 ![callback screen](docs/images/authorization-code-flow/3-callback-page.png)
 
-The result is a real access token, ID token, and refresh token from Hydra:
+The result is a real access token, ID token, and refresh token from Hydra.
 
 ![token response](docs/images/authorization-code-flow/4-tokens.png)
+
+</details>
 
 ## Building against a different testcontainers-ory-hydra version
 
