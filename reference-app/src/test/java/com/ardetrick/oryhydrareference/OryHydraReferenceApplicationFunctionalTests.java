@@ -624,8 +624,9 @@ public class OryHydraReferenceApplicationFunctionalTests {
     page.screenshot(screenshotPathProducer.screenshotOptionsForStepName("callback-page"));
     assertThat(page.url()).contains("/callback?code=");
 
-    // The form pre-fills the seeded demo client's values; this test's client is unique, so
-    // overwrite them.
+    // The credentials are tucked behind a disclosure and pre-filled for the seeded demo client;
+    // this test's client is unique, so expand the section and overwrite them.
+    page.locator("summary:has-text('Client credentials')").click();
     page.locator("input[id=clientId]").fill(clientId);
     page.locator("input[id=clientSecret]").fill(clientSecret);
     page.locator("input[id=exchange]").click();
