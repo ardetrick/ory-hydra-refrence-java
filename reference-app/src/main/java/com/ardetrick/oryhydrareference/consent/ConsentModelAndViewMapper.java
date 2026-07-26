@@ -26,6 +26,7 @@ public class ConsentModelAndViewMapper {
   private static ModelAndView handleDisplayUI(DisplayUI displayUI) {
     return new ModelAndView("consent")
         .addObject("consentChallenge", displayUI.consentChallenge())
+        .addObject("clientName", displayUI.clientName())
         .addObject("scopes", displayUI.requestedScopes());
   }
 

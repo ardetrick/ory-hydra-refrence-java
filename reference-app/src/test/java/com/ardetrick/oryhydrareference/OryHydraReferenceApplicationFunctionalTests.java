@@ -147,7 +147,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
                 .redirectUris(redirectUri)
                 .grantTypes("authorization_code", "refresh_token")
                 .responseTypes("code", "id_token")
-                .scope("offline_access", "openid", "offline", "profile"));
+                .scope("openid", "offline_access", "profile")
+                .put("client_name", "Demo Client"));
   }
 
   /**
@@ -195,7 +196,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
           .addParameter("response_type", "code")
           .addParameter("client_id", clientId)
           .addParameter("redirect_uri", redirectUri)
-          .addParameter("scope", "offline_access openid offline profile")
+          .addParameter("scope", "openid offline_access profile")
           .addParameter("state", "12345678901234567890")
           .build();
     } catch (URISyntaxException e) {
@@ -601,7 +602,8 @@ public class OryHydraReferenceApplicationFunctionalTests {
                 .redirectUris(appCallback)
                 .grantTypes("authorization_code", "refresh_token")
                 .responseTypes("code", "id_token")
-                .scope("offline_access", "openid", "offline", "profile"));
+                .scope("openid", "offline_access", "profile")
+                .put("client_name", "Demo Client"));
 
     val page = newPage();
 

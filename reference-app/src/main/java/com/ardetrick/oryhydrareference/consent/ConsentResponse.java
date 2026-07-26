@@ -10,7 +10,7 @@ public sealed interface ConsentResponse
 
   record Skip(String redirectTo) implements ConsentResponse {}
 
-  record DisplayUI(List<String> requestedScopes, String consentChallenge)
+  record DisplayUI(String clientName, List<RequestedScope> requestedScopes, String consentChallenge)
       implements ConsentResponse {}
 
   record Accepted(String redirectTo) implements ConsentResponse {}

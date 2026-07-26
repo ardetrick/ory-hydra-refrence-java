@@ -65,7 +65,7 @@ public class TestOryHydraReferenceApplication {
                           .redirectUris("http://localhost:8080/callback")
                           .grantTypes("authorization_code", "refresh_token")
                           .responseTypes("code", "id_token")
-                          .scope("openid", "offline", "offline_access", "profile")
+                          .scope("openid", "offline_access", "profile")
                           .put("client_name", "Demo Client"))
               .build();
       hydra.setPortBindings(List.of("4444:4444", "4445:4445"));
