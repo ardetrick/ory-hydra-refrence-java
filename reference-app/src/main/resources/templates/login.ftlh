@@ -2,24 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Log In</title>
+  <link rel="stylesheet" href="/pico.min.css">
 </head>
 <body>
-<h2>Log In</h2>
-<form action="/login/usernamePassword" method="post">
-  <input type="hidden" name="loginChallenge" value="${loginChallenge}" />
+<main class="container"><article>
+  <h1>Log In</h1>
+  <p><small>Demo credentials are pre-filled. Select Log in to continue.</small></p>
+  <form action="/login/usernamePassword" method="post">
+    <input type="hidden" name="loginChallenge" value="${loginChallenge}" />
 
-  <label for="loginEmail">Email:</label>
-  <input type="email" name="loginEmail" placeholder="foo@bar.com" /><br>
-  <label for="loginPassword">Password:</label>
-  <input type="password" name="loginPassword" placeholder="password" /><br>
+    <label for="loginEmail">Email</label>
+    <input type="email" id="loginEmail" name="loginEmail" value="foo@bar.com" />
 
-  <label for="remember">Remember me:</label>
-  <input type="checkbox" id="remember" name="remember" /><br>
+    <label for="loginPassword">Password</label>
+    <input type="password" id="loginPassword" name="loginPassword" value="password" />
 
-  <input type="submit" name="submit" value="Log in" />
-</form>
+    <label>
+      <input type="checkbox" id="remember" name="remember" />
+      Remember me
+    </label>
 
-<p>${(error)!}</p>
+    <input type="submit" name="submit" value="Log in" />
+  </form>
 
+  <#if (error)?has_content>
+    <p>${error}</p>
+  </#if>
+</article></main>
 </body>
 </html>

@@ -128,7 +128,7 @@ public class OryHydraReferenceApplicationFunctionalTests {
   // because GitHub scales README images down to its ~880px column but never up: captures
   // narrower than the column render 1:1, and the unstyled pages carry less dead space.
   private Page newPage() {
-    return browser.newPage(new Browser.NewPageOptions().setViewportSize(640, 400));
+    return browser.newPage(new Browser.NewPageOptions().setViewportSize(576, 520));
   }
 
   @BeforeEach

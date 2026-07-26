@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Ory Hydra Reference App</title>
+  <link rel="stylesheet" href="/pico.min.css">
 </head>
 <body>
+<main class="container"><article>
 <h1>Ory Hydra Reference App</h1>
 
 <p>This app implements the login, consent, and logout screens for an
@@ -68,5 +70,6 @@ curl -X PATCH \
 </pre>
 </div>
 </details>
+</article></main>
 </body>
 </html>
