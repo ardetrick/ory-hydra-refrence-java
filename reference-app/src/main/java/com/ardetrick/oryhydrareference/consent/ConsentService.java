@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
 import org.springframework.stereotype.Service;
+import sh.ory.hydra.model.OAuth2ConsentRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,23 @@ public class ConsentService {
       return new Skip(acceptConsentResponse.getRedirectTo());
     }
 
-    return new DisplayUI(consentRequest.getRequestedScope(), consentChallenge);
+    return new DisplayUI(
+        clientName(consentRequest),
+        RequestedScope.fromNames(consentRequest.getRequestedScope()),
+        consentChallenge);
+  }
+
+  // The consent challenge names the client asking for access. Prefer its display name, falling back
+  // to the client id, so the consent screen can tell the user who is requesting access.
+  private static String clientName(OAuth2ConsentRequest consentRequest) {
+    val client = consentRequest.getClient();
+    if (client == null) {
+      return "An application";
+    }
+    if (client.getClientName() != null && !client.getClientName().isBlank()) {
+      return client.getClientName();
+    }
+    return client.getClientId();
   }
 
   public ConsentResponse processConsentForm(@NonNull final ConsentForm consentForm) {
