@@ -123,10 +123,12 @@ public class OryHydraReferenceApplicationFunctionalTests {
     oryHydraContainer.stop();
   }
 
-  // Every screenshot these tests capture is destined for the docs, so the viewport is pinned
-  // rather than left at Playwright's default — a Playwright upgrade must not resize the images.
+  // Every screenshot these tests capture is destined for the docs, so the viewport is pinned —
+  // a Playwright upgrade must not resize the images. 640x400 rather than the 1280x720 default
+  // because GitHub scales README images down to its ~880px column but never up: captures
+  // narrower than the column render 1:1, and the unstyled pages carry less dead space.
   private Page newPage() {
-    return browser.newPage(new Browser.NewPageOptions().setViewportSize(1280, 720));
+    return browser.newPage(new Browser.NewPageOptions().setViewportSize(640, 400));
   }
 
   @BeforeEach

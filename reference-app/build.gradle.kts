@@ -47,6 +47,38 @@ tasks.withType<JavaCompile> {
     }
 }
 
+// The images embedded in the README are the screenshots the functional tests capture on every
+// run. This task republishes them into docs/images so they can be regenerated on purpose instead
+// of drifting (the previous set dated from 2022). Keys are docs/images/<flow> directory names,
+// values the producing test's screenshot directory under build/test-results/screenshots.
+val readmeScreenshotFlows =
+    mapOf(
+        "full-oauth-flow-oidc" to "completeFullOAuthFlowUsingUIToLogin",
+        "remember-me" to "skipConsentScreenOnSecondLoginWhenRememberMeIsUsed",
+    )
+
+tasks.register("refreshReadmeScreenshots") {
+    group = "documentation"
+    description = "Reruns the functional tests and copies their screenshots into docs/images."
+    dependsOn(tasks.test)
+    val screenshotsDir = layout.buildDirectory.dir("test-results/screenshots")
+    val docsImagesDir =
+        rootProject.layout.projectDirectory
+            .dir("docs/images")
+            .asFile
+    doLast {
+        readmeScreenshotFlows.forEach { (flow, testName) ->
+            val source = screenshotsDir.get().dir(testName).asFile
+            require(source.isDirectory && !source.listFiles().isNullOrEmpty()) {
+                "No screenshots at $source — did the test get renamed without updating this mapping?"
+            }
+            val target = docsImagesDir.resolve(flow)
+            target.deleteRecursively()
+            source.copyRecursively(target)
+        }
+    }
+}
+
 // A way to run Playwright CLI commands using the Java source dependency.
 // Particularly useful from within a CI context (see ./.github/workflows.gradle.yml).
 // https://playwright.dev/docs/cli#install-system-dependencies
