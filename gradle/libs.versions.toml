@@ -6,7 +6,7 @@ hydraClient = "26.2.0"
 javaJwt = "4.6.0"
 playwright = "1.61.0"
 springBoot = "4.1.0"
-spotless = "8.9.0"
+spotless = "8.10.1"
 springDependencyManagement = "1.1.7"
 # Default pin. CI overrides this via -PtestcontainersOryHydraVersion (see settings.gradle.kts);
 # do not inline this version back into build.gradle.kts.
