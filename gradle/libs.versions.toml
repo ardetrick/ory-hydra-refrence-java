@@ -5,7 +5,7 @@ freefairLombok = "9.5.0"
 hydraClient = "26.2.0"
 javaJwt = "4.6.0"
 playwright = "1.62.0"
-springBoot = "4.1.0"
+springBoot = "4.1.1"
 spotless = "8.10.1"
 springDependencyManagement = "1.1.7"
 # Default pin. CI overrides this via -PtestcontainersOryHydraVersion (see settings.gradle.kts);
